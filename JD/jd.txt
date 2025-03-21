@@ -1,0 +1,23 @@
+DoorDash is looking for a Software Engineer, Data to be a technical powerhouse to help us scale our data reliability, data infrastructure, automation and tools to meet growing business needs.
+
+You're excited about this opportunity because you will…
+
+Own critical data systems that support multiple products/teams
+Develop, implement and enforce best practices for data infrastructure and automation
+Design, develop and implement large scale, high volume, high performance data models and pipelines for Data Lake and Data Warehouse
+Improve the reliability and scalability of our Ingestion, data processing, ETLs, Reporting tools and data ecosystem services
+Manage a portfolio of data products that deliver high-quality, trustworthy data
+Help onboard and support other engineers as they join the team
+
+We're excited about you because…
+
+3+ years of professional experience
+3+ years experience working in data platform and data engineering or a similar role
+Proficiency in programming languages such as Python/Kotlin/Scala
+3+ years of experience in ETL orchestration and workflow management tools like Airflow
+Expert in database fundamentals, SQL, data reliability practices and distributed computing
+3+ years of experience with the Distributed data/similar ecosystem (Spark, Presto) and streaming technologies such as Kafka/Flink/Spark Streaming
+Excellent communication skills and experience working with technical and non-technical teams and knowledge of reporting tools 
+Comfortable working in fast paced environment, self starter and self organizing
+Ability to think strategically, analyze and interpret market and consumer information
+You must be located near one of our engineering hubs indicated above
