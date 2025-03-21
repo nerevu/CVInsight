@@ -22,6 +22,10 @@ PDF_EXTRACTION_METHOD = "PyPDF2"  # Options: 'PyPDF2', 'custom'
 MAX_PDF_SIZE_MB = 10  # Maximum PDF file size in MB
 ALLOWED_FILE_EXTENSIONS = ['.pdf']  # Allowed file extensions
 
+# Directory configuration
+RESUME_DIR = os.environ.get("RESUME_DIR", "./Resumes")
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "./Results")
+
 # Logging configuration
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 LOG_FILE = os.environ.get("LOG_FILE", "resume_analysis.log")

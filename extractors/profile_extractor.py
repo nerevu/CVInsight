@@ -73,16 +73,4 @@ Text:
         Returns:
             A dictionary with the profile information.
         """
-        # Check if output is a dictionary or a Pydantic model
-        if isinstance(output, dict):
-            return {
-                "name": output.get("name"),
-                "contact_number": output.get("contact_number"),
-                "email": output.get("email")
-            }
-        else:
-            return {
-                "name": output.name,
-                "contact_number": output.contact_number,
-                "email": output.email
-            } 
+        return self.process_simple_output(output, ["name", "contact_number", "email"]) 

@@ -6,23 +6,23 @@ A tool for extracting and analyzing information from resumes using LLMs.
 
 ```
 .
-├── config.py               # Configuration settings and API keys
-├── extractors/             # Package for specialized extractors
-│   ├── __init__.py         # Package exports
-│   ├── base_extractor.py   # Base class for all extractors
+├── config.py                # Configuration settings and API keys
+├── extractors/              # Package for specialized extractors
+│   ├── __init__.py          # Package exports
+│   ├── base_extractor.py    # Base class for all extractors
 │   ├── profile_extractor.py # Profile information extractor
-│   ├── skills_extractor.py # Skills extractor
+│   ├── skills_extractor.py  # Skills extractor
 │   ├── education_extractor.py # Education extractor
 │   ├── experience_extractor.py # Work experience extractor
-│   └── yoe_extractor.py    # Years of experience extractor
-├── llm_service.py          # Centralized LLM service
-├── main.py                 # Main application entry point
-├── models.py               # Pydantic models
-├── utils/                  # Utility functions
-│   ├── __init__.py         # Package exports
-│   └── common.py           # Common utility functions
-├── requirements.txt        # Project dependencies
-└── .env.example            # Example environment variables file
+│   └── yoe_extractor.py     # Years of experience extractor
+├── llm_service.py           # Centralized LLM service
+├── main.py                  # Main application entry point
+├── models.py                # Pydantic models (including Resume class)
+├── utils/                   # Utility functions
+│   ├── __init__.py          # Package exports
+│   └── common.py            # Common utility functions and ResumeProcessor
+├── requirements.txt         # Project dependencies
+└── .env.example             # Example environment variables file
 ```
 
 ## Setup
@@ -44,10 +44,30 @@ Run the main script:
 python main.py
 ```
 
+### Configuration
+
+You can configure the following options in the `.env` file:
+
+- `GOOGLE_API_KEY`: Your Google API key for Gemini LLM
+- `DEFAULT_LLM_MODEL`: Model name to use (default: gemini-2.0-flash)
+- `RESUME_DIR`: Directory containing resume files (default: ./Resumes)
+- `OUTPUT_DIR`: Directory for processed results (default: ./Results)
+- `LOG_LEVEL`: Logging level (INFO, DEBUG, etc.)
+- `LOG_FILE`: Path to log file
+
 ## Features
 
 - Extracts profile information (name, contact, email)
 - Extracts work experience details
 - Extracts education history
 - Analyzes years of experience
-- Identifies skills 
+- Identifies skills
+
+## Architecture
+
+The application uses a modular, object-oriented architecture:
+
+- **Resume Class**: Encapsulates all extracted resume information
+- **ResumeProcessor**: Manages the processing of resume files
+- **BaseExtractor**: Abstract base class for all specialized extractors
+- **Specialized Extractors**: Extract specific information from resumes using LLMs 

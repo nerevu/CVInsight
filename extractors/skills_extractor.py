@@ -28,8 +28,4 @@ Text:
         return {"text": extracted_text}
     
     def process_output(self, output: Any) -> Dict[str, Any]:
-        # Check if output is a dictionary or a Pydantic model
-        if isinstance(output, dict):
-            return {"skills": output.get("skills", [])}
-        else:
-            return {"skills": output.skills} 
+        return self.process_list_output(output, "skills") 

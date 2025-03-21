@@ -32,19 +32,5 @@ Text:
     def get_input_variables(self) -> List[str]:
         return ["text", "today"]
     
-    def prepare_input_data(self, extracted_text: str) -> Dict[str, Any]:
-        today = date.today()
-        return {
-            "text": extracted_text,
-            "today": today
-        }
-    
     def process_output(self, output: Any) -> Dict[str, Any]:
-        if isinstance(output, dict):
-            experiences = output.get("work_experiences", [])
-            # If experiences is already a list of dicts, return it directly
-            if experiences and isinstance(experiences[0], dict):
-                return {"work_experiences": experiences}
-            return {"work_experiences": []}
-        else:
-            return {"work_experiences": [exp.model_dump() for exp in output.work_experiences] if output.work_experiences else []} 
+        return self.process_list_output(output, "work_experiences") 

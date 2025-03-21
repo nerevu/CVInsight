@@ -32,19 +32,5 @@ Text:
     def get_input_variables(self) -> List[str]:
         return ["text", "today"]
     
-    def prepare_input_data(self, extracted_text: str) -> Dict[str, Any]:
-        today = date.today()
-        return {
-            "text": extracted_text,
-            "today": today
-        }
-    
     def process_output(self, output: Any) -> Dict[str, Any]:
-        if isinstance(output, dict):
-            educations = output.get("educations", [])
-            # If educations is already a list of dicts, return it directly
-            if educations and isinstance(educations[0], dict):
-                return {"educations": educations}
-            return {"educations": []}
-        else:
-            return {"educations": [edu.model_dump() for edu in output.educations] if output.educations else []} 
+        return self.process_list_output(output, "educations") 

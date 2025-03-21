@@ -1,7 +1,8 @@
-from typing import Type, Dict, Any, List
+from typing import Type, Dict, Any, List, Optional, Union
 from pydantic import BaseModel
 import llm_service
 from abc import ABC, abstractmethod
+from datetime import date
 
 class BaseExtractor(ABC):
     """
@@ -34,20 +35,22 @@ class BaseExtractor(ABC):
         """
         pass
     
-    @abstractmethod
     def get_input_variables(self) -> List[str]:
         """
         Get the input variables for the prompt template.
+        Default implementation returns ["text"] which is common for most extractors.
+        Override this method if additional input variables are needed.
         
         Returns:
             The list of input variable names.
         """
-        pass
+        return ["text"]
     
-    @abstractmethod
     def prepare_input_data(self, extracted_text: str) -> Dict[str, Any]:
         """
         Prepare the input data for the LLM.
+        Default implementation returns {"text": extracted_text}.
+        Override this method if additional processing or variables are needed.
         
         Args:
             extracted_text: The extracted text from the resume.
@@ -55,7 +58,54 @@ class BaseExtractor(ABC):
         Returns:
             A dictionary of input data.
         """
-        pass
+        input_data = {"text": extracted_text}
+        
+        # Add today's date if it's needed by the input variables
+        if "today" in self.get_input_variables():
+            input_data["today"] = date.today()
+            
+        return input_data
+    
+    def process_list_output(self, output: Any, list_field_name: str) -> Dict[str, Any]:
+        """
+        Process list-type output from the LLM with common pattern.
+        
+        Args:
+            output: The output from the LLM.
+            list_field_name: The name of the list field in the output.
+            
+        Returns:
+            A dictionary with the processed output.
+        """
+        if isinstance(output, dict):
+            items = output.get(list_field_name, [])
+            # If items is already a list of dicts, return it directly
+            if items and isinstance(items[0], dict):
+                return {list_field_name: items}
+            return {list_field_name: []}
+        else:
+            items = getattr(output, list_field_name, [])
+            return {list_field_name: [item.model_dump() for item in items] if items else []}
+    
+    def process_simple_output(self, output: Any, field_names: List[str]) -> Dict[str, Any]:
+        """
+        Process simple output from the LLM with common pattern.
+        
+        Args:
+            output: The output from the LLM.
+            field_names: The names of the fields to extract from the output.
+            
+        Returns:
+            A dictionary with the processed output.
+        """
+        result = {}
+        if isinstance(output, dict):
+            for field in field_names:
+                result[field] = output.get(field)
+        else:
+            for field in field_names:
+                result[field] = getattr(output, field, None)
+        return result
     
     @abstractmethod
     def process_output(self, output: Any) -> Dict[str, Any]:

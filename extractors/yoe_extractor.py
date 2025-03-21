@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from extractors.base_extractor import BaseExtractor
 from models import WorkDates
 from datetime import date
-from utils.common import calculate_experience
+from utils.date_utils import calculate_experience
 
 class YoeExtractor(BaseExtractor):
     """
@@ -81,12 +81,10 @@ Resume Text:
         Returns:
             A dictionary with the years of experience.
         """
-        if isinstance(output, dict):
-            oldest_date = output.get("oldest_working_date")
-            newest_date = output.get("newest_working_date")
-        else:
-            oldest_date = output.oldest_working_date
-            newest_date = output.newest_working_date
+        # First use the helper method to extract date fields
+        date_fields = self.process_simple_output(output, ["oldest_working_date", "newest_working_date"])
+        oldest_date = date_fields["oldest_working_date"]
+        newest_date = date_fields["newest_working_date"]
             
         experience = calculate_experience(oldest_date, newest_date)
         return {"YoE": experience} 
