@@ -6,3 +6,6 @@ __pycache__/
 *.pyw
 *.pyz
 archive/
+.env
+Results/
+resume_analysis.log
