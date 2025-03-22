@@ -15,6 +15,8 @@ Resume Analysis is a Python-based application that helps streamline the resume r
 - **Years of Experience**: Calculates total professional experience based on work history
 - **Concurrent Processing**: Processes multiple aspects of resumes in parallel for efficiency
 - **Structured Output**: Provides results in clean, structured JSON format
+- **Token Usage Tracking**: Monitors and logs API token consumption for each resume processed
+- **Separated Log Files**: Keeps resume outputs clean by storing token usage data in separate log files
 
 ## Setup
 
@@ -29,13 +31,38 @@ Resume Analysis is a Python-based application that helps streamline the resume r
 
 ## Usage
 
-Run the main script:
+### Basic Usage
+
+Run the main script to process all resumes in the Resumes directory:
 
 ```bash
 python main.py
 ```
 
-The processed results will be saved as JSON files in the configured output directory.
+The processed results will be saved as JSON files in the configured output directory, and token usage information will be saved in the logs directory.
+
+### Command-line Arguments
+
+The application supports the following command-line arguments:
+
+```bash
+# Process a single resume file
+python main.py --resume example.pdf
+
+# Only display token usage report for a previously processed resume
+python main.py --resume example.pdf --report-only
+
+# Specify a custom directory for token usage logs
+python main.py --log-dir ./custom_logs
+```
+
+### Token Usage Reports
+
+The system tracks token usage for each resume processed and provides:
+
+- A summary report in the console output
+- Detailed JSON log files in the logs/token_usage directory
+- Breakdown of token usage by extractor
 
 ### Configuration
 
@@ -59,6 +86,8 @@ The application uses a modular, object-oriented architecture:
 - **LLM Service**: Centralized service for interacting with language models
 
 ## Example Output
+
+### Resume JSON Output
 
 ```json
 {
@@ -93,3 +122,43 @@ The application uses a modular, object-oriented architecture:
   "YoE": "4 years"
 }
 ```
+
+### Token Usage Log Output
+
+```json
+{
+  "resume_file": "John_Doe.pdf",
+  "processed_at": "20250323_031534",
+  "token_usage": {
+    "total_tokens": 7695,
+    "prompt_tokens": 7410,
+    "completion_tokens": 285,
+    "by_extractor": {
+      "ProfileExtractor": {
+        "total_tokens": 1445,
+        "prompt_tokens": 1423,
+        "completion_tokens": 22
+      },
+      "SkillsExtractor": {
+        "total_tokens": 1383,
+        "prompt_tokens": 1304,
+        "completion_tokens": 79
+      },
+      "EducationExtractor": {
+        "total_tokens": 1672,
+        "prompt_tokens": 1624,
+        "completion_tokens": 48
+      },
+      "ExperienceExtractor": {
+        "total_tokens": 1704,
+        "prompt_tokens": 1586,
+        "completion_tokens": 118
+      },
+      "YoeExtractor": {
+        "total_tokens": 1491,
+        "prompt_tokens": 1473,
+        "completion_tokens": 18
+      }
+    }
+  }
+}

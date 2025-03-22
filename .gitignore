@@ -9,5 +9,5 @@ archive/
 .env
 Results/
 resume_analysis.log
-JD/
 docs/
+logs/

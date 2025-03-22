@@ -65,10 +65,14 @@ class Resume(BaseModel):
     file_path: Optional[str] = None
     file_name: Optional[str] = None
     
+    # Token usage information
+    token_usage: Dict[str, Any] = Field(default_factory=dict)
+    
     @classmethod
     def from_extractors_output(cls, profile: Dict[str, Any], skills: Dict[str, Any], 
                              education: Dict[str, Any], experience: Dict[str, Any], 
-                             yoe: Dict[str, Any], file_path: str) -> 'Resume':
+                             yoe: Dict[str, Any], file_path: str, 
+                             token_usage: Optional[Dict[str, int]] = None) -> 'Resume':
         """
         Create a Resume instance from the output of various extractors.
         
@@ -79,6 +83,7 @@ class Resume(BaseModel):
             experience: Output from the experience extractor
             yoe: Output from the years of experience extractor
             file_path: Path to the resume file
+            token_usage: Dictionary containing token usage information
             
         Returns:
             A Resume instance with all the extracted information
@@ -94,7 +99,8 @@ class Resume(BaseModel):
             work_experiences=experience.get('work_experiences', []),
             YoE=yoe.get('YoE'),
             file_path=file_path,
-            file_name=file_name
+            file_name=file_name,
+            token_usage=token_usage or {}
         )
     
     def to_dict(self) -> Dict[str, Any]:
@@ -104,4 +110,4 @@ class Resume(BaseModel):
         Returns:
             A dictionary representation of the Resume
         """
-        return self.model_dump(exclude={'file_path', 'file_name'}) 
+        return self.model_dump(exclude={'file_path', 'token_usage'}) 

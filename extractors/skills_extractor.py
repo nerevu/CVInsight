@@ -28,4 +28,13 @@ Text:
         return {"text": extracted_text}
     
     def process_output(self, output: Any) -> Dict[str, Any]:
+        """
+        Process the output from the LLM.
+        
+        Args:
+            output: The output from the LLM.
+            
+        Returns:
+            A dictionary with the skills information.
+        """
         return self.process_list_output(output, "skills") 

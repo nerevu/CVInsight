@@ -1,4 +1,4 @@
-from typing import Type, Dict, Any, List, Optional, Union
+from typing import Type, Dict, Any, List, Optional, Union, Tuple
 from pydantic import BaseModel
 import llm_service
 from abc import ABC, abstractmethod
@@ -79,13 +79,16 @@ class BaseExtractor(ABC):
         """
         if isinstance(output, dict):
             items = output.get(list_field_name, [])
-            # If items is already a list of dicts, return it directly
-            if items and isinstance(items[0], dict):
-                return {list_field_name: items}
-            return {list_field_name: []}
+            # Return the items directly if they exist regardless of type
+            # (could be a list of strings, dicts, or other primitives)
+            return {list_field_name: items}
         else:
             items = getattr(output, list_field_name, [])
-            return {list_field_name: [item.model_dump() for item in items] if items else []}
+            # If the items are a list of complex objects, convert them to dicts
+            if items and hasattr(items[0], 'model_dump'):
+                return {list_field_name: [item.model_dump() for item in items]}
+            # Otherwise return as is (for primitive types like strings)
+            return {list_field_name: items}
     
     def process_simple_output(self, output: Any, field_names: List[str]) -> Dict[str, Any]:
         """
@@ -120,7 +123,7 @@ class BaseExtractor(ABC):
         """
         pass
     
-    def extract(self, extracted_text: str) -> Dict[str, Any]:
+    def extract(self, extracted_text: str) -> Tuple[Dict[str, Any], Dict[str, int]]:
         """
         Extract information from the resume.
         
@@ -128,13 +131,21 @@ class BaseExtractor(ABC):
             extracted_text: The extracted text from the resume.
             
         Returns:
-            A dictionary of extracted information.
+            A tuple containing:
+            - A dictionary of extracted information
+            - A dictionary of token usage information
         """
         input_data = self.prepare_input_data(extracted_text)
-        output = llm_service.extract_with_llm(
+        output, token_usage = llm_service.extract_with_llm(
             self.get_model(),
             self.get_prompt_template(),
             self.get_input_variables(),
             input_data
         )
-        return self.process_output(output) 
+        
+        # Add extractor name to token usage for better tracking
+        extractor_name = self.__class__.__name__
+        token_usage["extractor"] = extractor_name
+        
+        # Process the output and return both the processed output and token usage
+        return self.process_output(output), token_usage 
