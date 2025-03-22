@@ -1,29 +1,20 @@
 # Resume Analysis
 
-A tool for extracting and analyzing information from resumes using LLMs.
+A powerful tool for extracting and analyzing information from resumes using Large Language Models (LLMs).
 
-## Project Structure
+## Overview
 
-```
-.
-├── config.py                # Configuration settings and API keys
-├── extractors/              # Package for specialized extractors
-│   ├── __init__.py          # Package exports
-│   ├── base_extractor.py    # Base class for all extractors
-│   ├── profile_extractor.py # Profile information extractor
-│   ├── skills_extractor.py  # Skills extractor
-│   ├── education_extractor.py # Education extractor
-│   ├── experience_extractor.py # Work experience extractor
-│   └── yoe_extractor.py     # Years of experience extractor
-├── llm_service.py           # Centralized LLM service
-├── main.py                  # Main application entry point
-├── models.py                # Pydantic models (including Resume class)
-├── utils/                   # Utility functions
-│   ├── __init__.py          # Package exports
-│   └── common.py            # Common utility functions and ResumeProcessor
-├── requirements.txt         # Project dependencies
-└── .env.example             # Example environment variables file
-```
+Resume Analysis is a Python-based application that helps streamline the resume review process by automatically extracting key information from PDF resumes. The system uses Google's Gemini models to process and extract structured data from unstructured resume text.
+
+## Features
+
+- **Profile Extraction**: Extracts basic information like name, contact number, and email
+- **Skills Analysis**: Identifies technical and soft skills from resumes
+- **Education History**: Extracts educational qualifications with institution names, dates, and degrees
+- **Work Experience**: Analyzes professional experience with company names, roles, and dates
+- **Years of Experience**: Calculates total professional experience based on work history
+- **Concurrent Processing**: Processes multiple aspects of resumes in parallel for efficiency
+- **Structured Output**: Provides results in clean, structured JSON format
 
 ## Setup
 
@@ -44,6 +35,8 @@ Run the main script:
 python main.py
 ```
 
+The processed results will be saved as JSON files in the configured output directory.
+
 ### Configuration
 
 You can configure the following options in the `.env` file:
@@ -55,14 +48,6 @@ You can configure the following options in the `.env` file:
 - `LOG_LEVEL`: Logging level (INFO, DEBUG, etc.)
 - `LOG_FILE`: Path to log file
 
-## Features
-
-- Extracts profile information (name, contact, email)
-- Extracts work experience details
-- Extracts education history
-- Analyzes years of experience
-- Identifies skills
-
 ## Architecture
 
 The application uses a modular, object-oriented architecture:
@@ -70,4 +55,41 @@ The application uses a modular, object-oriented architecture:
 - **Resume Class**: Encapsulates all extracted resume information
 - **ResumeProcessor**: Manages the processing of resume files
 - **BaseExtractor**: Abstract base class for all specialized extractors
-- **Specialized Extractors**: Extract specific information from resumes using LLMs 
+- **Specialized Extractors**: Extract specific information from resumes using LLMs
+- **LLM Service**: Centralized service for interacting with language models
+
+## Example Output
+
+```json
+{
+  "name": "John Doe",
+  "contact_number": "+1-123-456-7890",
+  "email": "john.doe@example.com",
+  "skills": [
+    "Python",
+    "Machine Learning",
+    "Data Analysis",
+    "SQL",
+    "JavaScript"
+  ],
+  "educations": [
+    {
+      "institution": "University of Example",
+      "start_date": "2015-09",
+      "end_date": "2019-05",
+      "location": "Boston, MA",
+      "degree": "Bachelor of Science in Computer Science"
+    }
+  ],
+  "work_experiences": [
+    {
+      "company": "Tech Company Inc.",
+      "start_date": "2019-06",
+      "end_date": "2023-03",
+      "location": "San Francisco, CA",
+      "role": "Software Engineer"
+    }
+  ],
+  "YoE": "4 years"
+}
+```
