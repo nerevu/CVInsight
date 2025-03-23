@@ -1,8 +1,7 @@
-ollama-ocr
-nltk
 PyPDF2
 langchain
 ollama
 langchain-community
 langchain-google-genai
 python-dotenv
+docx2txt

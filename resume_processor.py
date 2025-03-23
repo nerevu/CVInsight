@@ -323,8 +323,8 @@ class ResumeProcessor:
             reverse=True
         )
         
-        # Show top 3 extractors for a cleaner report, unless debugging
-        extractors_to_show = sorted_extractors[:3]
+        # Show top 5 extractors for a cleaner report, unless debugging
+        extractors_to_show = sorted_extractors[:5]
         
         for extractor_name, extractor_usage in extractors_to_show:
             extractor_tokens = extractor_usage.get("total_tokens", 0)

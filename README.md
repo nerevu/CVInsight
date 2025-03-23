@@ -4,10 +4,11 @@ A powerful tool for extracting and analyzing information from resumes using Larg
 
 ## Overview
 
-Resume Analysis is a Python-based application that helps streamline the resume review process by automatically extracting key information from PDF resumes. The system uses Google's Gemini models to process and extract structured data from unstructured resume text.
+Resume Analysis is a Python-based application that helps streamline the resume review process by automatically extracting key information from PDF and DOCX resumes. The system uses Google's Gemini models to process and extract structured data from unstructured resume text.
 
 ## Features
 
+- **Multiple Resume Formats**: Supports both PDF and DOCX resume file formats
 - **Profile Extraction**: Extracts basic information like name, contact number, and email
 - **Skills Analysis**: Identifies technical and soft skills from resumes
 - **Education History**: Extracts educational qualifications with institution names, dates, and degrees
@@ -27,7 +28,7 @@ Resume Analysis is a Python-based application that helps streamline the resume r
    - Linux/Mac: `source .venv/bin/activate`
 4. Install dependencies: `pip install -r requirements.txt`
 5. Copy `.env.example` to `.env` and fill in your API keys
-6. Place resume PDFs in the `Resumes/` directory
+6. Place resume files (PDF or DOCX format) in the `Resumes/` directory
 
 ## Usage
 

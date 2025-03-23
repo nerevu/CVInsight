@@ -20,7 +20,7 @@ PDF_EXTRACTION_METHOD = "PyPDF2"  # Options: 'PyPDF2', 'custom'
 
 # File validation
 MAX_PDF_SIZE_MB = 10  # Maximum PDF file size in MB
-ALLOWED_FILE_EXTENSIONS = ['.pdf']  # Allowed file extensions
+ALLOWED_FILE_EXTENSIONS = ['.pdf', '.docx']  # Allowed file extensions
 
 # Directory configuration
 RESUME_DIR = os.environ.get("RESUME_DIR", "./Resumes")
