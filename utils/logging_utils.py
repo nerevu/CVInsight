@@ -2,6 +2,7 @@ import os
 import logging
 import sys
 import config
+from logging.handlers import RotatingFileHandler
 
 def setup_logging():
     """Set up logging configuration."""
@@ -12,12 +13,20 @@ def setup_logging():
     if log_dir and not os.path.exists(log_dir):
         os.makedirs(log_dir, exist_ok=True)
     
+    # Configure rotating file handler
+    max_log_size = config.LOG_MAX_SIZE_MB * 1024 * 1024  # Convert MB to bytes
+    backup_count = config.LOG_BACKUP_COUNT
+    
     # Configure logging
     logging.basicConfig(
         level=log_level,
         format=config.LOG_FORMAT,
         handlers=[
-            logging.FileHandler(config.LOG_FILE),
+            RotatingFileHandler(
+                config.LOG_FILE,
+                maxBytes=max_log_size,
+                backupCount=backup_count
+            ),
             logging.StreamHandler(sys.stdout)
         ]
     )

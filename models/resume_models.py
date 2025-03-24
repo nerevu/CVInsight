@@ -1,46 +1,71 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Dict, Optional, Any
 from pydantic import BaseModel, Field
-from datetime import datetime
 import os
 
+class ResumeProfile(BaseModel):
+    """Model for basic profile information"""
+    name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    linkedin: Optional[str] = None
+    current_title: Optional[str] = None
+    summary: Optional[str] = None
+
+class ResumeSkills(BaseModel):
+    """Model for skills"""
+    skills: Dict[str, List[str]]
+
 class Skills(BaseModel):
+    """Simple skills model for backward compatibility"""
     skills: List[str] = Field(
         ...,
         description="A list of skills extracted from the resume text."
     )
 
-class WorkDates(BaseModel):
-    oldest_working_date: Optional[str] = Field(
-        description="The oldest working date from the resume in dd/mm/yyyy format."
-    )
-    newest_working_date: Optional[str] = Field(
-        description="The newest working date from the resume in dd/mm/yyyy format (the end date of last company)"
-    )
-
-class ProfileInfo(BaseModel):
-    name: Optional[str]
-    contact_number: Optional[str]
-    email: Optional[str]
-
-class WorkExperience(BaseModel):
-    company: Optional[str] = None
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-    location: Optional[str] = None
-    role: Optional[str] = None
-
-class ResumeWorkExperience(BaseModel):
-    work_experiences: List[WorkExperience]
-
 class Education(BaseModel):
-    institution: Optional[str] = None
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
+    """Model for an education entry"""
+    degree: str
     location: Optional[str] = None
-    degree: Optional[str] = None
+    institution: str
+    start_date: str
+    end_date: str
 
 class ResumeEducation(BaseModel):
+    """Model for education information"""
     educations: List[Education]
+
+class Experience(BaseModel):
+    """Model for a work experience entry"""
+    company: str
+    role: str
+    location: Optional[str] = None
+    start_date: str
+    end_date: str
+
+class ResumeWorkExperience(BaseModel):
+    """Model for work experience information"""
+    work_experiences: List[Experience]
+
+class WorkDates(BaseModel):
+    """Model for work dates information"""
+    oldest_working_date: str
+    newest_working_date: str
+    total_experience: Optional[str] = None
+
+class JobTitleMatch(BaseModel):
+    """Model for job title industry matching results"""
+    
+    class Industry(BaseModel):
+        industry: str
+        confidence: float
+        
+    class JobTitle(BaseModel):
+        title: str
+        company: str
+        industries: List['JobTitleMatch.Industry']
+        
+    job_titles: List[JobTitle]
+    overall_industries: List[Industry]
 
 class Resume(BaseModel):
     """A complete resume with all extracted information."""
@@ -56,7 +81,7 @@ class Resume(BaseModel):
     educations: List[Education] = Field(default_factory=list)
     
     # Work Experience
-    work_experiences: List[WorkExperience] = Field(default_factory=list)
+    work_experiences: List[Experience] = Field(default_factory=list)
     
     # Years of Experience
     YoE: Optional[str] = None
@@ -67,6 +92,9 @@ class Resume(BaseModel):
     
     # Token usage information
     token_usage: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Plugin data for custom extractors
+    plugin_data: Dict[str, Any] = Field(default_factory=dict)
     
     @classmethod
     def from_extractors_output(cls, profile: Dict[str, Any], skills: Dict[str, Any], 
@@ -92,7 +120,7 @@ class Resume(BaseModel):
         
         return cls(
             name=profile.get('name'),
-            contact_number=profile.get('contact_number'),
+            contact_number=profile.get('phone'),  # Updated to match ResumeProfile
             email=profile.get('email'),
             skills=skills.get('skills', []),
             educations=education.get('educations', []),
@@ -102,6 +130,16 @@ class Resume(BaseModel):
             file_name=file_name,
             token_usage=token_usage or {}
         )
+        
+    def add_plugin_data(self, plugin_name: str, data: Dict[str, Any]) -> None:
+        """
+        Add data from a plugin extractor.
+        
+        Args:
+            plugin_name: Name of the plugin
+            data: Data extracted by the plugin
+        """
+        self.plugin_data[plugin_name] = data
     
     def to_dict(self) -> Dict[str, Any]:
         """

@@ -1,16 +1,17 @@
 # Resume Analysis
 
-A powerful tool for extracting and analyzing information from resumes using Large Language Models (LLMs).
+A powerful tool for extracting and analyzing information from resumes using Large Language Models (LLMs) with a plugin-based architecture.
 
 ## Overview
 
-Resume Analysis is a Python-based application that helps streamline the resume review process by automatically extracting key information from PDF and DOCX resumes. The system uses Google's Gemini models to process and extract structured data from unstructured resume text.
+Resume Analysis is a Python-based application that helps streamline the resume review process by automatically extracting key information from PDF and DOCX resumes. The system uses Google's Gemini models to process and extract structured data from unstructured resume text through a flexible plugin architecture.
 
 ## Features
 
+- **Plugin-Based Architecture**: Easily extend functionality by adding new plugins
 - **Multiple Resume Formats**: Supports both PDF and DOCX resume file formats
 - **Profile Extraction**: Extracts basic information like name, contact number, and email
-- **Skills Analysis**: Identifies technical and soft skills from resumes
+- **Skills Analysis**: Identifies skills from resumes
 - **Education History**: Extracts educational qualifications with institution names, dates, and degrees
 - **Work Experience**: Analyzes professional experience with company names, roles, and dates
 - **Years of Experience**: Calculates total professional experience based on work history
@@ -18,6 +19,8 @@ Resume Analysis is a Python-based application that helps streamline the resume r
 - **Structured Output**: Provides results in clean, structured JSON format
 - **Token Usage Tracking**: Monitors and logs API token consumption for each resume processed
 - **Separated Log Files**: Keeps resume outputs clean by storing token usage data in separate log files
+- **Automatic Log Rotation**: Implements log rotation to keep log files manageable
+- **Configurable Log Retention**: Automatically cleans up token usage logs after a configurable period
 
 ## Setup
 
@@ -55,6 +58,12 @@ python main.py --resume example.pdf --report-only
 
 # Specify a custom directory for token usage logs
 python main.py --log-dir ./custom_logs
+
+# Enable verbose logging
+python main.py --verbose
+
+# Clean up __pycache__ directories and compiled Python files
+python main.py --cleanup
 ```
 
 ### Token Usage Reports
@@ -63,9 +72,9 @@ The system tracks token usage for each resume processed and provides:
 
 - A summary report in the console output
 - Detailed JSON log files in the logs/token_usage directory
-- Breakdown of token usage by extractor
+- Breakdown of token usage by plugin
 
-### Configuration
+### Configuration Options
 
 You can configure the following options in the `.env` file:
 
@@ -75,16 +84,31 @@ You can configure the following options in the `.env` file:
 - `OUTPUT_DIR`: Directory for processed results (default: ./Results)
 - `LOG_LEVEL`: Logging level (INFO, DEBUG, etc.)
 - `LOG_FILE`: Path to log file
+- `TOKEN_LOG_RETENTION_DAYS`: Number of days to keep token usage logs (default: 7)
+- `LOG_MAX_SIZE_MB`: Maximum size of log files before rotation in MB (default: 5)
+- `LOG_BACKUP_COUNT`: Number of backup log files to keep (default: 3)
+- `DEBUG`: Enable or disable debug mode (default: False)
 
-## Architecture
+## Plugin Architecture
 
-The application uses a modular, object-oriented architecture:
+The application uses a modular, plugin-based architecture:
 
-- **Resume Class**: Encapsulates all extracted resume information
-- **ResumeProcessor**: Manages the processing of resume files
-- **BaseExtractor**: Abstract base class for all specialized extractors
-- **Specialized Extractors**: Extract specific information from resumes using LLMs
+- **Plugin Manager**: Discovers, loads, and manages plugins
+- **Base Plugin**: Abstract base class for all plugins
+- **Built-in Plugins**: Profile, Skills, Education, Experience, and YoE extractors
+- **Custom Plugins**: Add your own plugins in the `custom_plugins` directory
+- **Plugin Resume Processor**: Processes resumes using the loaded plugins
 - **LLM Service**: Centralized service for interacting with language models
+
+### Creating Custom Plugins
+
+You can create custom plugins by inheriting from the `BasePlugin` class and implementing the required methods:
+
+1. Create a new Python file in the `custom_plugins` directory
+2. Import the `BasePlugin` class from `base_plugins.base`
+3. Create a class that inherits from `BasePlugin`
+4. Implement the required abstract methods: `name`, `version`, `description`, `category`, `get_model`, `get_prompt_template`, and `process_output`
+5. Add your plugin to the `__all__` list in `custom_plugins/__init__.py`
 
 ## Example Output
 
@@ -135,27 +159,27 @@ The application uses a modular, object-oriented architecture:
     "prompt_tokens": 7410,
     "completion_tokens": 285,
     "by_extractor": {
-      "ProfileExtractor": {
+      "ProfileExtractorPlugin": {
         "total_tokens": 1445,
         "prompt_tokens": 1423,
         "completion_tokens": 22
       },
-      "SkillsExtractor": {
+      "SkillsExtractorPlugin": {
         "total_tokens": 1383,
         "prompt_tokens": 1304,
         "completion_tokens": 79
       },
-      "EducationExtractor": {
+      "EducationExtractorPlugin": {
         "total_tokens": 1672,
         "prompt_tokens": 1624,
         "completion_tokens": 48
       },
-      "ExperienceExtractor": {
+      "ExperienceExtractorPlugin": {
         "total_tokens": 1704,
         "prompt_tokens": 1586,
         "completion_tokens": 118
       },
-      "YoeExtractor": {
+      "YoeExtractorPlugin": {
         "total_tokens": 1491,
         "prompt_tokens": 1473,
         "completion_tokens": 18
