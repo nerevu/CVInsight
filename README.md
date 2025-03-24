@@ -6,6 +6,18 @@ A powerful tool for extracting and analyzing information from resumes using Larg
 
 Resume Analysis is a Python-based application that helps streamline the resume review process by automatically extracting key information from PDF and DOCX resumes. The system uses Google's Gemini models to process and extract structured data from unstructured resume text through a flexible plugin architecture.
 
+## Documentation
+
+- **Wiki Pages**: For detailed documentation, examples, and guides, please visit our [Wiki](https://github.com/Gaurav-Kumar98/Resume-Analysis/wiki)
+  - [Home](https://github.com/Gaurav-Kumar98/Resume-Analysis/wiki/Home)
+  - [Installation and Setup](https://github.com/Gaurav-Kumar98/Resume-Analysis/wiki/Installation-and-Setup)
+  - [User Guide](https://github.com/Gaurav-Kumar98/Resume-Analysis/wiki/User-Guide)
+  - [Plugin System](https://github.com/Gaurav-Kumar98/Resume-Analysis/wiki/Plugin-System)
+  - [Technical Documentation](https://github.com/Gaurav-Kumar98/Resume-Analysis/wiki/Technical-Documentation)
+  - [Examples and Tutorials](https://github.com/Gaurav-Kumar98/Resume-Analysis/wiki/Examples-and-Tutorials)
+
+- **Blog Post**: Learn more about the development process in the article [Building a Resume Parser with LLMs: A Step-by-Step Guide](https://www.linkedin.com/pulse/building-resume-parser-llms-step-by-step-guide-gaurav-kumar-82pqc)
+
 ## Features
 
 - **Plugin-Based Architecture**: Easily extend functionality by adding new plugins
@@ -100,6 +112,8 @@ The application uses a modular, plugin-based architecture:
 - **Plugin Resume Processor**: Processes resumes using the loaded plugins
 - **LLM Service**: Centralized service for interacting with language models
 
+For detailed documentation about the plugin architecture and creating custom plugins, please refer to our [Plugin System Wiki Page](https://github.com/Gaurav-Kumar98/Resume-Analysis/wiki/Plugin-System).
+
 ### Creating Custom Plugins
 
 You can create custom plugins by inheriting from the `BasePlugin` class and implementing the required methods:
@@ -109,6 +123,8 @@ You can create custom plugins by inheriting from the `BasePlugin` class and impl
 3. Create a class that inherits from `BasePlugin`
 4. Implement the required abstract methods: `name`, `version`, `description`, `category`, `get_model`, `get_prompt_template`, and `process_output`
 5. Add your plugin to the `__all__` list in `custom_plugins/__init__.py`
+
+Check out the [Examples and Tutorials](https://github.com/Gaurav-Kumar98/Resume-Analysis/wiki/Examples-and-Tutorials) wiki page for more examples on how to create and use custom plugins.
 
 ## Example Output
 
