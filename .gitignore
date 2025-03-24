@@ -9,5 +9,6 @@ archive/
 .env
 Results/
 resume_analysis.log
-docs/
+docs/*
+!docs/wiki/
 logs/
