@@ -4,6 +4,35 @@ AI-powered resume parsing and analysis using Google's Gemini models.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## Overview
+
+CVInsight is a Python package that helps streamline the resume review process by automatically extracting key information from PDF and DOCX resumes. The system uses Google's Gemini models to process and extract structured data from unstructured resume text through a flexible plugin architecture.
+
+## Key Features
+
+- **Clean Dictionary Output**: All functions return clean Python dictionaries, not Pydantic objects.
+- **Separate Token Usage Logging**: Token usage data is logged to separate files in the `logs/` directory.
+- **Consistent API**: Both client and API approaches produce the same output format.
+- **Easy Authentication**: Multiple ways to provide API keys (direct, environment variables, .env).
+- **Dictionary Output**: All extractors return dictionaries or lists of dictionaries for easy JSON serialization.
+- **Extract structured information** from resumes (PDF, DOCX).
+- **Parse personal details**, education, experience, skills, and more.
+- **Customize extraction** with plugins.
+- **CLI tool** for batch processing.
+- **Plugin-Based Architecture**: Easily extend functionality by adding new plugins.
+- **Multiple Resume Formats**: Supports both PDF and DOCX resume file formats.
+- **Profile Extraction**: Extracts basic information like name, contact number, and email.
+- **Skills Analysis**: Identifies skills from resumes.
+- **Education History**: Extracts educational qualifications with institution names, dates, and degrees.
+- **Work Experience**: Analyzes professional experience with company names, roles, and dates.
+- **Years of Experience**: Calculates total professional experience based on work history.
+- **Concurrent Processing**: Processes multiple aspects of resumes in parallel for efficiency.
+- **Structured Output**: Provides results in clean, structured JSON format.
+- **Token Usage Tracking**: Monitors and logs API token consumption for each resume processed.
+- **Separated Log Files**: Keeps resume outputs clean by storing token usage data in separate log files.
+- **Automatic Log Rotation**: Implements log rotation to keep log files manageable.
+- **Configurable Log Retention**: Automatically cleans up token usage logs after a configurable period.
+
 ## Installation
 
 ```bash
@@ -80,36 +109,94 @@ print("\nFull resume information:")
 print(json.dumps(result, indent=2))
 ```
 
-### Alternative Configuration Methods
+## Configuration
 
-You can also set the API key as an environment variable:
+### API Key
+
+You can set the API key in multiple ways:
+
+1.  **Directly in Code (as shown in Quick Start) (Not recommended)**
+2.  **Environment Variable:**
+    ```bash
+    # In your shell
+    export GOOGLE_API_KEY="YOUR_GEMINI_API_KEY"
+    ```
+3.  **`.env` File:** Create a `.env` file in your project directory (Recommended):
+    ```
+    GOOGLE_API_KEY=YOUR_GEMINI_API_KEY
+    ```
+
+### Other Configuration Options
+
+You can configure the following options in the `.env` file (primarily for development and advanced usage):
+
+- `DEFAULT_LLM_MODEL`: Model name to use (default: gemini-2.0-flash)
+- `RESUME_DIR`: Directory containing resume files (default: ./Resumes)
+- `OUTPUT_DIR`: Directory for processed results (default: ./Results)
+- `LOG_LEVEL`: Logging level (INFO, DEBUG, etc.)
+- `LOG_FILE`: Path to log file
+- `TOKEN_LOG_RETENTION_DAYS`: Number of days to keep token usage logs (default: 7)
+- `LOG_MAX_SIZE_MB`: Maximum size of log files before rotation in MB (default: 5)
+- `LOG_BACKUP_COUNT`: Number of backup log files to keep (default: 3)
+- `DEBUG`: Enable or disable debug mode (default: False)
+
+
+## Command Line Usage
 
 ```bash
-# In your shell
-export GOOGLE_API_KEY="YOUR_GEMINI_API_KEY"
+# Process a resume with all plugins
+cvinsight --resume path/to/resume.pdf
+
+# List available plugins
+cvinsight --list-plugins
+
+# Process with specific plugins
+cvinsight --resume path/to/resume.pdf --plugins profile_extractor,skills_extractor
+
+# Output as JSON
+cvinsight --resume path/to/resume.pdf --json
+
+# Save to specific directory
+cvinsight --resume path/to/resume.pdf --output ./results
 ```
 
-Or in a `.env` file in your project directory:
+For development and advanced usage, `main.py` supports additional arguments:
 
+```bash
+# Process a single resume file (using main.py directly)
+python main.py --resume example.pdf
+
+# Only display token usage report for a previously processed resume
+python main.py --resume example.pdf --report-only
+
+# Specify a custom directory for token usage logs
+python main.py --log-dir ./custom_logs
+
+# Enable verbose logging
+python main.py --verbose
+
+# Clean up __pycache__ directories and compiled Python files
+python main.py --cleanup
 ```
-GOOGLE_API_KEY=YOUR_GEMINI_API_KEY
+
+Example CLI output:
 ```
+Resume Analysis Results:
+Name: JOHN DOE
+Email: john.doe@example.com
+Skills: Python, SQL, Data Analysis, Machine Learning...
 
-## Key Features
+Education:
+- Bachelor of Science in Computer Science at Example University
 
-- **Clean Dictionary Output**: All functions return clean Python dictionaries, not Pydantic objects
-- **Separate Token Usage Logging**: Token usage data is logged to separate files in the `logs/` directory
-- **Consistent API**: Both client and API approaches produce the same output format
-- **Easy Authentication**: Multiple ways to provide API keys (direct, environment variables, .env)
-- **Dictionary Output**: All extractors return dictionaries or lists of dictionaries for easy JSON serialization
-- **Extract structured information** from resumes (PDF, DOCX)
-- **Parse personal details**, education, experience, skills, and more
-- **Customize extraction** with plugins
-- **CLI tool** for batch processing
+Experience:
+- Software Engineer at Tech Company
+Years of Experience: 5 Years
+```
 
 ## Token Usage Logging
 
-By default, token usage information is logged to separate files to keep the output data clean:
+By default, token usage information is logged to separate files to keep the output data clean.
 
 ```python
 # Enable token usage logging (default)
@@ -124,47 +211,54 @@ Token usage logs are saved to the `logs/` directory with filenames that include 
 logs/token_usage/resume_name_token_usage_YYYYMMDD_HHMMSS.json
 ```
 
+The system tracks token usage for each resume processed and provides:
+- A summary report in the console output (when using `main.py`)
+- Detailed JSON log files in the `logs/token_usage` directory
+- Breakdown of token usage by plugin/extractor
+
 ### Token Usage Log Example
 
 ```json
 {
+  "resume_file": "John_Doe.pdf",
+  "processed_at": "20250323_031534",
   "token_usage": {
-    "total_tokens": 6572,
-    "prompt_tokens": 6135,
-    "completion_tokens": 437,
+    "total_tokens": 7695,
+    "prompt_tokens": 7410,
+    "completion_tokens": 285,
     "by_extractor": {
       "profile": {
-        "total_tokens": 1586,
-        "prompt_tokens": 1517,
-        "completion_tokens": 69,
-        "source": "message_usage_metadata"
+        "total_tokens": 1445,
+        "prompt_tokens": 1423,
+        "completion_tokens": 22,
+        "source": "message_usage_metadata" // Or "plugins" depending on context
       },
       "skills": {
-        "total_tokens": 1388,
-        "prompt_tokens": 1288,
-        "completion_tokens": 100,
-        "source": "message_usage_metadata"
-      },
-      "education": {
-        "total_tokens": 1711,
-        "prompt_tokens": 1632,
+        "total_tokens": 1383,
+        "prompt_tokens": 1304,
         "completion_tokens": 79,
         "source": "message_usage_metadata"
       },
+      "education": {
+        "total_tokens": 1672,
+        "prompt_tokens": 1624,
+        "completion_tokens": 48,
+        "source": "message_usage_metadata"
+      },
       "experience": {
-        "total_tokens": 1887,
-        "prompt_tokens": 1698,
-        "completion_tokens": 189,
+        "total_tokens": 1704,
+        "prompt_tokens": 1586,
+        "completion_tokens": 118,
         "source": "message_usage_metadata"
       },
       "yoe": {
-        "total_tokens": 0,
-        "prompt_tokens": 0,
-        "completion_tokens": 0,
-        "source": "calculated"
+        "total_tokens": 1491, // Example, actual could be 0 if calculated
+        "prompt_tokens": 1473,
+        "completion_tokens": 18,
+        "source": "message_usage_metadata" // Or "calculated"
       }
     },
-    "source": "plugins"
+    "source": "plugins" // Or another top-level source
   }
 }
 ```
@@ -231,7 +325,7 @@ print(education)
   "skills": [
     "Python",
     "Machine Learning",
-    "Data Analysis", 
+    "Data Analysis",
     "SQL",
     "JavaScript"
   ]
@@ -251,143 +345,6 @@ print(education)
   }
 ]
 ```
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Overview
-
-CVInsight is a Python package that helps streamline the resume review process by automatically extracting key information from PDF and DOCX resumes. The system uses Google's Gemini models to process and extract structured data from unstructured resume text through a flexible plugin architecture.
-
-## Command Line Usage
-
-```bash
-# Process a resume with all plugins
-cvinsight --resume path/to/resume.pdf
-
-# List available plugins
-cvinsight --list-plugins
-
-# Process with specific plugins
-cvinsight --resume path/to/resume.pdf --plugins profile_extractor,skills_extractor
-
-# Output as JSON
-cvinsight --resume path/to/resume.pdf --json
-
-# Save to specific directory
-cvinsight --resume path/to/resume.pdf --output ./results
-```
-
-## Documentation
-
-- **Wiki Pages**: For detailed documentation, examples, and guides, please visit our [Wiki](https://github.com/Gaurav-Kumar98/CVInsight/wiki).
-  - [Home](https://github.com/Gaurav-Kumar98/CVInsight/wiki/Home)
-  - [Installation and Setup](https://github.com/Gaurav-Kumar98/CVInsight/wiki/Installation-and-Setup)
-  - [User Guide](https://github.com/Gaurav-Kumar98/CVInsight/wiki/User-Guide)
-  - [Plugin System](https://github.com/Gaurav-Kumar98/CVInsight/wiki/Plugin-System)
-  - [Technical Documentation](https://github.com/Gaurav-Kumar98/CVInsight/wiki/Technical-Documentation)
-  - [Examples and Tutorials](https://github.com/Gaurav-Kumar98/CVInsight/wiki/Examples-and-Tutorials)
-
-- **Blog Post**: Learn more about the development process in the article [Building a Resume Parser with LLMs: A Step-by-Step Guide](https://www.linkedin.com/pulse/building-resume-parser-llms-step-by-step-guide-gaurav-kumar-82pqc)
-
-## Features
-
-- **Plugin-Based Architecture**: Easily extend functionality by adding new plugins
-- **Multiple Resume Formats**: Supports both PDF and DOCX resume file formats
-- **Profile Extraction**: Extracts basic information like name, contact number, and email
-- **Skills Analysis**: Identifies skills from resumes
-- **Education History**: Extracts educational qualifications with institution names, dates, and degrees
-- **Work Experience**: Analyzes professional experience with company names, roles, and dates
-- **Years of Experience**: Calculates total professional experience based on work history
-- **Concurrent Processing**: Processes multiple aspects of resumes in parallel for efficiency
-- **Structured Output**: Provides results in clean, structured JSON format
-- **Token Usage Tracking**: Monitors and logs API token consumption for each resume processed
-- **Separated Log Files**: Keeps resume outputs clean by storing token usage data in separate log files
-- **Automatic Log Rotation**: Implements log rotation to keep log files manageable
-- **Configurable Log Retention**: Automatically cleans up token usage logs after a configurable period
-
-## Setup
-
-1. Clone the repository
-2. Create a virtual environment: `python -m venv .venv`
-3. Activate the virtual environment:
-   - Windows: `.venv\Scripts\activate`
-   - Linux/Mac: `source .venv/bin/activate`
-4. Install dependencies: `pip install -r requirements.txt`
-5. Copy `.env.example` to `.env` and fill in your API keys
-6. Place resume files (PDF or DOCX format) in the `Resumes/` directory
-
-## Usage
-
-### Basic Usage
-
-Run the main script to process all resumes in the Resumes directory:
-
-```bash
-python main.py
-```
-
-The processed results will be saved as JSON files in the configured output directory, and token usage information will be saved in the logs directory.
-
-### Command-line Arguments
-
-The application supports the following command-line arguments:
-
-```bash
-# Process a single resume file
-python main.py --resume example.pdf
-
-# Only display token usage report for a previously processed resume
-python main.py --resume example.pdf --report-only
-
-# Specify a custom directory for token usage logs
-python main.py --log-dir ./custom_logs
-
-# Enable verbose logging
-python main.py --verbose
-
-# Clean up __pycache__ directories and compiled Python files
-python main.py --cleanup
-```
-
-Example CLI output:
-```
-Resume Analysis Results:
-Name: JOHN DOE
-Email: john.doe@example.com
-Skills: Python, SQL, Data Analysis, Machine Learning...
-
-Education:
-- Bachelor of Science in Computer Science at Example University
-
-Experience:
-- Software Engineer at Tech Company
-Years of Experience: 5 Years
-```
-
-### Token Usage Reports
-
-The system tracks token usage for each resume processed and provides:
-
-- A summary report in the console output
-- Detailed JSON log files in the logs/token_usage directory
-- Breakdown of token usage by plugin
-
-### Configuration Options
-
-You can configure the following options in the `.env` file:
-
-- `GOOGLE_API_KEY`: Your Google API key for Gemini LLM
-- `DEFAULT_LLM_MODEL`: Model name to use (default: gemini-2.0-flash)
-- `RESUME_DIR`: Directory containing resume files (default: ./Resumes)
-- `OUTPUT_DIR`: Directory for processed results (default: ./Results)
-- `LOG_LEVEL`: Logging level (INFO, DEBUG, etc.)
-- `LOG_FILE`: Path to log file
-- `TOKEN_LOG_RETENTION_DAYS`: Number of days to keep token usage logs (default: 7)
-- `LOG_MAX_SIZE_MB`: Maximum size of log files before rotation in MB (default: 5)
-- `LOG_BACKUP_COUNT`: Number of backup log files to keep (default: 3)
-- `DEBUG`: Enable or disable debug mode (default: False)
 
 ## Plugin Architecture
 
@@ -414,80 +371,31 @@ You can create custom plugins by inheriting from the `BasePlugin` class and impl
 
 Check out the [Examples and Tutorials](https://github.com/Gaurav-Kumar98/CVInsight/wiki/Examples-and-Tutorials) wiki page for more examples on how to create and use custom plugins.
 
-## Example Output
 
-### Resume JSON Output
+## Setup (for Development)
 
-```json
-{
-  "name": "John Doe",
-  "contact_number": "+1-123-456-7890",
-  "email": "john.doe@example.com",
-  "skills": [
-    "Python",
-    "Machine Learning",
-    "Data Analysis",
-    "SQL",
-    "JavaScript"
-  ],
-  "educations": [
-    {
-      "institution": "University of Example",
-      "start_date": "2015-09",
-      "end_date": "2019-05",
-      "location": "Boston, MA",
-      "degree": "Bachelor of Science in Computer Science"
-    }
-  ],
-  "work_experiences": [
-    {
-      "company": "Tech Company Inc.",
-      "start_date": "2019-06",
-      "end_date": "2023-03",
-      "location": "San Francisco, CA",
-      "role": "Software Engineer"
-    }
-  ],
-  "YoE": "4 years"
-}
-```
+1. Clone the repository
+2. Create a virtual environment: `python -m venv .venv`
+3. Activate the virtual environment:
+   - Windows: `.venv\Scripts\activate`
+   - Linux/Mac: `source .venv/bin/activate`
+4. Install dependencies: `pip install -r requirements.txt`
+5. Copy `.env.example` to `.env` and fill in your API keys
+6. Place resume files (PDF or DOCX format) in the `Resumes/` directory (or configure `RESUME_DIR` in `.env`)
 
-### Token Usage Log Output
+## Documentation
 
-```json
-{
-  "resume_file": "John_Doe.pdf",
-  "processed_at": "20250323_031534",
-  "token_usage": {
-    "total_tokens": 7695,
-    "prompt_tokens": 7410,
-    "completion_tokens": 285,
-    "by_extractor": {
-      "profile": {
-        "total_tokens": 1445,
-        "prompt_tokens": 1423,
-        "completion_tokens": 22
-      },
-      "skills": {
-        "total_tokens": 1383,
-        "prompt_tokens": 1304,
-        "completion_tokens": 79
-      },
-      "education": {
-        "total_tokens": 1672,
-        "prompt_tokens": 1624,
-        "completion_tokens": 48
-      },
-      "experience": {
-        "total_tokens": 1704,
-        "prompt_tokens": 1586,
-        "completion_tokens": 118
-      },
-      "yoe": {
-        "total_tokens": 1491,
-        "prompt_tokens": 1473,
-        "completion_tokens": 18
-      }
-    }
-  }
-}
+- **Wiki Pages**: For detailed documentation, examples, and guides, please visit our [Wiki](https://github.com/Gaurav-Kumar98/CVInsight/wiki).
+  - [Home](https://github.com/Gaurav-Kumar98/CVInsight/wiki/Home)
+  - [Installation and Setup](https://github.com/Gaurav-Kumar98/CVInsight/wiki/Installation-and-Setup)
+  - [User Guide](https://github.com/Gaurav-Kumar98/CVInsight/wiki/User-Guide)
+  - [Plugin System](https://github.com/Gaurav-Kumar98/CVInsight/wiki/Plugin-System)
+  - [Technical Documentation](https://github.com/Gaurav-Kumar98/CVInsight/wiki/Technical-Documentation)
+  - [Examples and Tutorials](https://github.com/Gaurav-Kumar98/CVInsight/wiki/Examples-and-Tutorials)
+
+- **Blog Post**: Learn more about the development process in the article [Building a Resume Parser with LLMs: A Step-by-Step Guide](https://www.linkedin.com/pulse/building-resume-parser-llms-step-by-step-guide-gaurav-kumar-82pqc)
+
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
