@@ -281,8 +281,12 @@ cvinsight --resume path/to/resume.pdf --output ./results
 
 ## Documentation
 
+<<<<<<< HEAD
 - **Wiki Pages**: For detailed documentation, examples, and guides, please visit our [Wiki](https://github.com/Gaurav-Kumar98/CVInsight/wiki).
 For comprehensive information, please refer to our detailed Wiki pages.
+=======
+- **Wiki Pages**: For detailed documentation, examples, and guides, please visit our [Wiki](https://github.com/Gaurav-Kumar98/CVInsight/wiki)
+>>>>>>> 0ea61cc90157308a3a2ec66893a23e105010bed3
   - [Home](https://github.com/Gaurav-Kumar98/CVInsight/wiki/Home)
   - [Installation and Setup](https://github.com/Gaurav-Kumar98/CVInsight/wiki/Installation-and-Setup)
   - [User Guide](https://github.com/Gaurav-Kumar98/CVInsight/wiki/User-Guide)
