@@ -1,13 +1,14 @@
-# Resume Analysis Wiki
+# CVInsight Wiki
 
-Welcome to the Resume Analysis project wiki! This documentation will help you understand, set up, and use the Resume Analysis tool effectively.
+Welcome to the CVInsight project wiki! This documentation will help you understand, set up, and use the CVInsight tool effectively.
 
 ## Overview
 
-Resume Analysis is a powerful Python-based application designed to streamline the resume review process. It automatically extracts and analyzes information from PDF and DOCX resumes using Google's Gemini Large Language Models (LLMs). The system features a flexible plugin architecture that makes it easy to extend its functionality.
+CVInsight is a powerful Python package designed to streamline the resume review process. It automatically extracts and analyzes information from PDF and DOCX resumes using Google's Gemini Large Language Models (LLMs). The system features a flexible plugin architecture that makes it easy to extend its functionality.
 
 ## Key Features
 
+- **Python Package**: Available on PyPI for easy installation via pip
 - **Plugin-Based Architecture**: Extend functionality by adding new plugins
 - **Multiple Resume Formats**: Support for PDF and DOCX files
 - **Comprehensive Information Extraction**:
@@ -21,29 +22,50 @@ Resume Analysis is a powerful Python-based application designed to streamline th
   - Structured JSON output
   - Token usage tracking and optimization
 - **Robust Logging**:
-  - Separate log files for different purposes
-  - Automatic log rotation
-  - Configurable log retention
+  - Separate log files for token usage
+  - Detailed token usage metrics
+  - Configurable logging options
+- **Multiple Interfaces**:
+  - Clean Python API
+  - Functional interface
+  - Command-line interface
 
 ## Quick Start
 
-1. Clone the repository
-2. Set up your environment:
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # Linux/Mac
-   .venv\Scripts\activate     # Windows
-   pip install -r requirements.txt
-   ```
-3. Configure your environment:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API keys and preferences
-   ```
-4. Process resumes:
-   ```bash
-   python main.py
-   ```
+### Installation
+
+```bash
+pip install cvinsight
+```
+
+### Usage
+
+```python
+from cvinsight import CVInsightClient
+
+# Initialize with your API key
+client = CVInsightClient(api_key="your_google_api_key")
+
+# Analyze a resume
+results = client.extract_all("path/to/resume.pdf")
+
+# Print the results
+print(f"Name: {results.get('name')}")
+print(f"Skills: {', '.join(results.get('skills', []))}")
+```
+
+### Command-Line Interface
+
+```bash
+# Process a resume and output results
+cvinsight --resume path/to/resume.pdf
+
+# List available plugins
+cvinsight --list-plugins
+
+# Use specific plugins only
+cvinsight --resume path/to/resume.pdf --plugins profile_extractor,skills_extractor
+```
 
 ## Documentation Sections
 

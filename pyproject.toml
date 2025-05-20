@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cvinsight"
+version = "0.1.0"
+description = "AI-powered resume parsing and analysis using Google's Gemini models"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "CVInsight Team", email = "gk0415439@gmail.com"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "langchain",
+    "langchain-google-genai",
+    "pydantic",
+    "python-dotenv",
+    "click",
+    "typing-extensions",
+    "pypdf2",
+    "docx2txt",
+    "langchain-community",
+]
+
+[project.urls]
+Homepage = "https://github.com/Gaurav-Kumar98/CVInsight"
+Repository = "https://github.com/Gaurav-Kumar98/CVInsight.git"
+"Bug Tracker" = "https://github.com/Gaurav-Kumar98/CVInsight/issues"
+
+[project.scripts]
+cvinsight = "cvinsight.cli:main"
+
+[tool.setuptools]
+packages = ["cvinsight"] 

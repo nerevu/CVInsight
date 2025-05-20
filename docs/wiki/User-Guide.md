@@ -1,37 +1,145 @@
 # User Guide
 
-This guide will help you use the Resume Analysis tool effectively to process and analyze resumes.
+This guide will help you use the CVInsight package effectively to process and analyze resumes.
 
-## Basic Usage
+## Getting Started
 
-### Processing Resumes
+CVInsight offers multiple ways to interact with the system:
 
-1. Place your resume files (PDF or DOCX) in the `Resumes/` directory
-2. Run the main script:
-   ```bash
-   python main.py
-   ```
-3. Find the processed results in the `Results/` directory
+1. **Python API**: Using the client interface in your code
+2. **Functional API**: Direct function calls for specific operations
+3. **Command-Line Interface**: Command-line tool for processing resumes
 
-### Command-Line Arguments
+## Python API
 
-The tool supports various command-line arguments for different use cases:
+### Client Interface
+
+The `CVInsightClient` class provides a clean, object-oriented interface:
+
+```python
+from cvinsight import CVInsightClient
+
+# Initialize with your API key
+client = CVInsightClient(api_key="your_google_api_key")
+
+# Extract all information
+results = client.extract_all("path/to/resume.pdf")
+
+# Print the results
+print(f"Name: {results.get('name')}")
+print(f"Email: {results.get('email')}")
+print(f"Skills: {', '.join(results.get('skills', []))}")
+```
+
+### Specific Extraction Methods
+
+The client offers methods for targeted extraction:
+
+```python
+# Extract just profile information
+profile = client.extract_profile("path/to/resume.pdf")
+print(f"Name: {profile.get('name')}")
+
+# Extract just skills
+skills = client.extract_skills("path/to/resume.pdf")
+print(f"Skills: {', '.join(skills.get('skills', []))}")
+
+# Extract education history
+education = client.extract_education("path/to/resume.pdf")
+for edu in education:
+    print(f"Degree: {edu.get('degree')} at {edu.get('institution')}")
+
+# Extract work experience
+experience = client.extract_experience("path/to/resume.pdf")
+for exp in experience:
+    print(f"Role: {exp.get('role')} at {exp.get('company')}")
+
+# Extract years of experience
+yoe = client.extract_years_of_experience("path/to/resume.pdf")
+print(f"Years of Experience: {yoe}")
+```
+
+### Plugin Management
+
+The client also provides methods for working with plugins:
+
+```python
+# List all available plugins
+plugins = client.list_all_plugins()
+for plugin in plugins:
+    print(f"Plugin: {plugin['name']} - {plugin['description']}")
+
+# List plugins by category
+analyzer_plugins = client.list_plugins_by_category("ANALYZER")
+for plugin in analyzer_plugins:
+    print(f"Analyzer Plugin: {plugin['name']}")
+
+# Analyze with specific plugins
+results = client.analyze_resume("path/to/resume.pdf", 
+                            plugins=["profile_extractor", "skills_extractor"])
+```
+
+## Functional API
+
+CVInsight also provides a functional API for direct use:
+
+```python
+from cvinsight import (
+    extract_all,
+    extract_profile,
+    extract_education,
+    extract_experience,
+    extract_skills,
+    extract_years_of_experience,
+    analyze_resume,
+    list_all_plugins,
+    list_plugins_by_category
+)
+
+# Extract all information
+results = extract_all("path/to/resume.pdf")
+
+# Extract specific information
+profile = extract_profile("path/to/resume.pdf")
+skills = extract_skills("path/to/resume.pdf")
+education = extract_education("path/to/resume.pdf")
+experience = extract_experience("path/to/resume.pdf")
+yoe = extract_years_of_experience("path/to/resume.pdf")
+
+# List plugins
+plugins = list_all_plugins()
+analyzer_plugins = list_plugins_by_category("ANALYZER")
+```
+
+## Command-Line Interface
+
+### Basic Usage
+
+```bash
+# Install the package
+pip install cvinsight
+
+# Process a resume
+cvinsight --resume path/to/resume.pdf
+
+# List available plugins
+cvinsight --list-plugins
+```
+
+### CLI Options
 
 ```bash
 # Process a single resume file
-python main.py --resume example.pdf
+cvinsight --resume example.pdf
 
-# Display token usage report for a previously processed resume
-python main.py --resume example.pdf --report-only
+# Specify output directory
+cvinsight --resume example.pdf --output ./results
 
-# Specify a custom directory for token usage logs
-python main.py --log-dir ./custom_logs
+# Use specific plugins
+cvinsight --resume example.pdf --plugins profile_extractor,skills_extractor
 
-# Enable verbose logging
-python main.py --verbose
-
-# Clean up __pycache__ directories and compiled Python files
-python main.py --cleanup
+# Output as JSON
+cvinsight --resume example.pdf --json
 ```
 
 ## Output Formats
@@ -80,37 +188,40 @@ The system tracks and reports token usage for each processed resume:
 
 ```json
 {
-  "resume_file": "John_Doe.pdf",
-  "processed_at": "20250323_031534",
   "token_usage": {
     "total_tokens": 7695,
     "prompt_tokens": 7410,
     "completion_tokens": 285,
     "by_extractor": {
-      "ProfileExtractorPlugin": {
+      "profile": {
         "total_tokens": 1445,
         "prompt_tokens": 1423,
-        "completion_tokens": 22
+        "completion_tokens": 22,
+        "source": "plugin"
       },
-      "SkillsExtractorPlugin": {
+      "skills": {
         "total_tokens": 1383,
         "prompt_tokens": 1304,
-        "completion_tokens": 79
+        "completion_tokens": 79,
+        "source": "plugin"
       },
-      "EducationExtractorPlugin": {
+      "education": {
         "total_tokens": 1672,
         "prompt_tokens": 1624,
-        "completion_tokens": 48
+        "completion_tokens": 48,
+        "source": "plugin"
       },
-      "ExperienceExtractorPlugin": {
+      "experience": {
         "total_tokens": 1704,
         "prompt_tokens": 1586,
-        "completion_tokens": 118
+        "completion_tokens": 118,
+        "source": "plugin"
       },
-      "YoeExtractorPlugin": {
+      "yoe": {
         "total_tokens": 1491,
         "prompt_tokens": 1473,
-        "completion_tokens": 18
+        "completion_tokens": 18,
+        "source": "plugin"
       }
     }
   }
@@ -119,34 +230,63 @@ The system tracks and reports token usage for each processed resume:
 
 ## Advanced Features
 
-### Batch Processing
+### Token Usage Tracking
 
-To process multiple resumes efficiently:
+CVInsight automatically logs token usage information:
 
-1. Place all resumes in the `Resumes/` directory
-2. Run the main script without arguments:
-   ```bash
-   python main.py
-   ```
-3. The tool will process all resumes concurrently and generate results in the `Results/` directory
+```python
+# Enable token usage logging (enabled by default)
+results = client.extract_all("path/to/resume.pdf", log_token_usage=True)
 
-### Token Usage Optimization
+# Token usage logs are stored in the 'logs' directory
+```
 
-To optimize token usage:
+### Custom Plugins
 
-1. Monitor token usage reports in the `logs/token_usage` directory
-2. Adjust prompt templates in plugins if needed
-3. Use the `--report-only` flag to analyze token usage without reprocessing
+You can create and use custom plugins with CVInsight:
 
-### Log Management
+```python
+from cvinsight.base_plugins import ExtractorPlugin, PluginMetadata, PluginCategory
+from pydantic import BaseModel, Field
+from typing import Dict, Any, Type, List
 
-The system provides comprehensive logging:
+# Define a custom plugin
+class CustomPlugin(ExtractorPlugin):
+    def __init__(self, llm_service=None):
+        self.llm_service = llm_service
+    
+    @property
+    def metadata(self) -> PluginMetadata:
+        return PluginMetadata(
+            name="custom_analyzer",
+            version="1.0.0",
+            description="Custom analysis plugin",
+            category=PluginCategory.ANALYZER,
+            author="Your Name"
+        )
+    
+    def get_model(self) -> Type[BaseModel]:
+        class CustomModel(BaseModel):
+            custom_field: str = Field(description="Custom field")
+        
+        return CustomModel
+    
+    def get_prompt_template(self) -> str:
+        return """
+        Analyze the following resume text and provide custom analysis.
+        {format_instructions}
+        
+        Text:
+        {text}
+        """
+    
+    def get_input_variables(self) -> List[str]:
+        return ["text"]
 
-- Main application logs in `resume_analysis.log`
-- Token usage logs in `logs/token_usage/`
-- Debug logs when `DEBUG=True` in `.env`
-
-Logs are automatically rotated based on size and retention settings in `.env`.
+# Register and use the custom plugin
+custom_plugin = CustomPlugin()
+client._plugin_manager.register_plugin(custom_plugin)
+```
 
 ## Best Practices
 
@@ -156,19 +296,19 @@ Logs are automatically rotated based on size and retention settings in `.env`.
    - Avoid scanned documents or images
 
 2. **Performance**
-   - Process resumes in batches for better efficiency
+   - Process one resume at a time for better accuracy
    - Monitor token usage to optimize costs
-   - Clean up old logs regularly
+   - Use specific extractors when you only need certain information
 
 3. **Error Handling**
-   - Check logs for processing errors
+   - Implement proper try/except blocks in your code
+   - Check return values for expected fields
    - Verify API key validity
-   - Ensure sufficient disk space
 
 4. **Security**
    - Keep API keys secure
-   - Regularly rotate API keys
-   - Don't share processed results containing sensitive information
+   - Don't hardcode API keys in your code
+   - Use environment variables for sensitive information
 
 ## Troubleshooting
 
@@ -182,7 +322,7 @@ Logs are automatically rotated based on size and retention settings in `.env`.
 2. **Processing Failures**
    - Check resume file format
    - Verify file permissions
-   - Review error logs
+   - Look for error messages in the response
 
 3. **Token Usage Issues**
    - Monitor token usage reports

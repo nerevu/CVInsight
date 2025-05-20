@@ -1,6 +1,6 @@
 # Plugin System
 
-The Resume Analysis tool uses a flexible plugin-based architecture that allows you to extend its functionality by creating custom plugins. This guide explains the plugin system and how to create your own plugins.
+CVInsight uses a flexible plugin-based architecture that allows you to extend its functionality by creating custom plugins. This guide explains the plugin system and how to create your own plugins.
 
 ## Plugin Architecture Overview
 
@@ -9,7 +9,7 @@ The Resume Analysis tool uses a flexible plugin-based architecture that allows y
 1. **Plugin Manager**
    - Discovers and loads plugins
    - Manages plugin lifecycle
-   - Handles plugin dependencies
+   - Provides methods for working with plugins
 
 2. **Base Plugin**
    - Abstract base class for all plugins
@@ -25,25 +25,41 @@ The Resume Analysis tool uses a flexible plugin-based architecture that allows y
 
 The system includes several built-in plugins:
 
-1. **ProfileExtractorPlugin**
+1. **Profile Extractor Plugin**
    - Extracts basic information
    - Name, contact details, email
 
-2. **SkillsExtractorPlugin**
+2. **Skills Extractor Plugin**
    - Identifies skills from resume
    - Technical and soft skills
 
-3. **EducationExtractorPlugin**
+3. **Education Extractor Plugin**
    - Extracts educational history
    - Institutions, degrees, dates
 
-4. **ExperienceExtractorPlugin**
+4. **Experience Extractor Plugin**
    - Analyzes work experience
    - Companies, roles, dates
 
-5. **YoeExtractorPlugin**
+5. **YoE Extractor Plugin**
    - Calculates years of experience
    - Total professional experience
+
+### Plugin Types
+The system supports multiple types of plugins:
+- **Extractor Plugins**: Implement the `ExtractorPlugin` interface to extract specific information from resumes
+- **Custom Plugins**: Implement the `BasePlugin` interface for custom functionality
+- **Processor Plugins**: Implement post-processing or analysis on extracted data
+
+### Plugin Categories
+Plugins are classified into different categories:
+
+- **BASE**: Core functionality plugins (included in the base_plugins directory)
+- **EXTRACTOR**: Plugins that extract information from resume text
+- **PROCESSOR**: Plugins that process data after extraction
+- **ANALYZER**: Plugins that analyze extracted data
+- **CUSTOM**: User-created plugins for specific needs
+- **UTILITY**: Helper plugins for various operations
 
 ## Creating Custom Plugins
 
@@ -52,282 +68,326 @@ The system includes several built-in plugins:
 A basic plugin structure looks like this:
 
 ```python
-from base_plugins.base import BasePlugin
+from cvinsight.base_plugins import ExtractorPlugin, PluginMetadata, PluginCategory
+from pydantic import BaseModel, Field
+from typing import Dict, Any, Type, List
 
-class CustomPlugin(BasePlugin):
-    def __init__(self):
-        super().__init__()
-        
+class CustomPlugin(ExtractorPlugin):
+    """A custom plugin for specific extraction or analysis."""
+    
+    def __init__(self, llm_service=None):
+        """Initialize the plugin with LLM service."""
+        self.llm_service = llm_service
+    
     @property
-    def name(self) -> str:
-        return "CustomPlugin"
+    def metadata(self) -> PluginMetadata:
+        return PluginMetadata(
+            name="custom_extractor",
+            version="1.0.0",
+            description="Description of what this plugin does",
+            category=PluginCategory.CUSTOM,
+            author="Your Name"
+        )
+    
+    def initialize(self) -> None:
+        """Initialize the plugin."""
+        pass
+    
+    def get_model(self) -> Type[BaseModel]:
+        """Define the Pydantic model for the output."""
+        class CustomData(BaseModel):
+            field1: str = Field(..., description="First field")
+            field2: List[str] = Field(default_factory=list, description="Second field")
         
-    @property
-    def version(self) -> str:
-        return "1.0.0"
-        
-    @property
-    def description(self) -> str:
-        return "Description of what this plugin does"
-        
-    @property
-    def category(self) -> str:
-        return "custom"
-        
-    def get_model(self) -> str:
-        return "gemini-2.0-flash"
-        
+        return CustomData
+    
     def get_prompt_template(self) -> str:
+        """Define the prompt template for the LLM."""
         return """
-        Extract {category} information from the following resume text:
+        Extract specific information from the following text:
         
-        {resume_text}
+        {text}
         
-        Return the information in the following JSON format:
-        {
-            "key1": "value1",
-            "key2": ["value2", "value3"]
-        }
+        {format_instructions}
         """
-        
-    def process_output(self, output: str) -> dict:
-        # Process the LLM output and return structured data
-        return self.parse_json(output)
+    
+    def get_input_variables(self) -> List[str]:
+        """Define the input variables for the prompt template."""
+        return ["text"]
+    
+    def prepare_input_data(self, extracted_text: str) -> Dict[str, Any]:
+        """Prepare input data for the prompt template."""
+        return {"text": extracted_text}
 ```
 
 ### Required Methods
 
 Every plugin must implement these methods:
 
-1. **name**
-   - Returns unique plugin name
-   - Used for identification and logging
+1. **metadata**
+   - Returns a `PluginMetadata` object with plugin information
+   - Includes name, version, description, category, and author
 
-2. **version**
-   - Returns plugin version
-   - Helps with compatibility tracking
+2. **initialize**
+   - Called when the plugin is loaded
+   - Used for any setup operations
 
-3. **description**
-   - Returns plugin description
-   - Used in documentation and UI
+3. **get_model**
+   - Returns a Pydantic model class
+   - Defines the structure of the output data
 
-4. **category**
-   - Returns plugin category
-   - Groups related plugins
+4. **get_prompt_template**
+   - Returns a string template for the LLM prompt
+   - Should include placeholders for input variables
 
-5. **get_model**
-   - Returns LLM model name
-   - Specifies which model to use
+5. **get_input_variables**
+   - Returns a list of variable names used in the prompt template
+   - Must include at least the text input variable
 
-6. **get_prompt_template**
-   - Returns prompt template
-   - Defines how to query the LLM
+6. **prepare_input_data**
+   - Prepares the input data for the prompt template
+   - Takes extracted text and returns a dictionary of variables
 
-7. **process_output**
-   - Processes LLM output
-   - Returns structured data
+### Plugin Metadata
 
-### Best Practices
-
-1. **Plugin Design**
-   - Keep plugins focused and single-purpose
-   - Use clear, descriptive names
-   - Document all methods and parameters
-
-2. **Error Handling**
-   - Implement robust error handling
-   - Validate LLM outputs
-   - Provide meaningful error messages
-
-3. **Performance**
-   - Optimize prompt templates
-   - Minimize token usage
-   - Handle large inputs efficiently
-
-4. **Testing**
-   - Write unit tests
-   - Test with various inputs
-   - Verify output formats
-
-## Plugin Development Guide
-
-### 1. Create Plugin File
-
-Create a new Python file in the `custom_plugins` directory:
+The `PluginMetadata` class includes:
 
 ```python
-# custom_plugins/custom_extractor.py
-from base_plugins.base import BasePlugin
-
-class CustomExtractorPlugin(BasePlugin):
-    # Implement required methods
-    pass
+class PluginMetadata:
+    name: str           # Unique identifier for the plugin
+    version: str        # Version number (semantic versioning recommended)
+    description: str    # Brief description of what the plugin does
+    category: str       # Plugin category (use PluginCategory enum)
+    author: str         # Plugin author name
 ```
 
-### 2. Register Plugin
-
-Add your plugin to `custom_plugins/__init__.py`:
-
+The `PluginCategory` enum includes these options:
 ```python
-from .custom_extractor import CustomExtractorPlugin
-
-__all__ = ['CustomExtractorPlugin']
+class PluginCategory:
+    BASE = "BASE"           # Core functionality
+    EXTRACTOR = "EXTRACTOR" # Data extraction
+    PROCESSOR = "PROCESSOR" # Data processing
+    ANALYZER = "ANALYZER"   # Data analysis
+    CUSTOM = "CUSTOM"       # Custom functionality
+    UTILITY = "UTILITY"     # Utility functions
 ```
 
-### 3. Test Plugin
+### Using Pydantic Models
 
-Create tests in `tests/test_custom_extractor.py`:
+Pydantic models define the structure of your plugin's output:
 
 ```python
-import unittest
-from custom_plugins.custom_extractor import CustomExtractorPlugin
+from pydantic import BaseModel, Field
+from typing import List, Optional
 
-class TestCustomExtractor(unittest.TestCase):
-    def setUp(self):
-        self.plugin = CustomExtractorPlugin()
+class CustomModel(BaseModel):
+    """Model for custom extracted data."""
+    name: str = Field(..., description="Name of the entity")
+    categories: List[str] = Field(default_factory=list, description="Categories")
+    description: Optional[str] = Field(None, description="Optional description")
+```
+
+### Practical Example: Job Match Analyzer
+
+Here's a complete example of a job matcher plugin:
+
+```python
+from cvinsight.base_plugins import ExtractorPlugin, PluginMetadata, PluginCategory
+from pydantic import BaseModel, Field
+from typing import Dict, Any, Type, List
+
+class JobMatch(BaseModel):
+    """Model for job match analysis."""
+    match_score: int = Field(..., description="Match score from 0-100")
+    matching_skills: List[str] = Field(default_factory=list, description="Matching skills")
+    missing_skills: List[str] = Field(default_factory=list, description="Missing required skills")
+    recommendation: str = Field(..., description="Overall recommendation")
+
+class JobMatchPlugin(ExtractorPlugin):
+    """Plugin to match resumes against job descriptions."""
+    
+    def __init__(self, job_description: str, llm_service=None):
+        """
+        Initialize with a job description.
         
-    def test_plugin_initialization(self):
-        self.assertEqual(self.plugin.name, "CustomExtractorPlugin")
-        self.assertEqual(self.plugin.version, "1.0.0")
-        
-    def test_plugin_processing(self):
-        # Test plugin processing
+        Args:
+            job_description: The job description to match against
+            llm_service: LLM service for extraction
+        """
+        self.job_description = job_description
+        self.llm_service = llm_service
+    
+    @property
+    def metadata(self) -> PluginMetadata:
+        return PluginMetadata(
+            name="job_match_analyzer",
+            version="1.0.0",
+            description="Analyzes how well a resume matches a job description",
+            category=PluginCategory.ANALYZER,
+            author="Your Name"
+        )
+    
+    def initialize(self) -> None:
+        """Initialize the plugin."""
         pass
-
-if __name__ == '__main__':
-    unittest.main()
+    
+    def get_model(self) -> Type[BaseModel]:
+        """Get the Pydantic model for job match analysis."""
+        return JobMatch
+    
+    def get_prompt_template(self) -> str:
+        """Get the prompt template for job matching."""
+        return """
+        Analyze how well the candidate's resume matches the following job description.
+        Provide a match score from 0-100, list matching skills, missing required skills,
+        and give an overall recommendation.
+        
+        JOB DESCRIPTION:
+        {job_description}
+        
+        RESUME:
+        {text}
+        
+        {format_instructions}
+        """
+    
+    def get_input_variables(self) -> List[str]:
+        """Get the input variables for the prompt template."""
+        return ["text", "job_description"]
+    
+    def prepare_input_data(self, extracted_text: str) -> Dict[str, Any]:
+        """Prepare the input data for the LLM."""
+        return {
+            "text": extracted_text,
+            "job_description": self.job_description
+        }
 ```
 
-## Plugin Examples
+## Using Custom Plugins
 
-### 1. Skills Extractor Plugin
+### With the Client Interface
 
 ```python
-from base_plugins.base import BasePlugin
+from cvinsight import CVInsightClient
+from your_plugins import JobMatchPlugin
 
-class SkillsExtractorPlugin(BasePlugin):
-    def __init__(self):
-        super().__init__()
-        
-    @property
-    def name(self) -> str:
-        return "SkillsExtractorPlugin"
-        
-    @property
-    def version(self) -> str:
-        return "1.0.0"
-        
-    @property
-    def description(self) -> str:
-        return "Extracts skills from resume text"
-        
-    @property
-    def category(self) -> str:
-        return "skills"
-        
-    def get_model(self) -> str:
-        return "gemini-2.0-flash"
-        
-    def get_prompt_template(self) -> str:
-        return """
-        Extract skills from the following resume text.
-        Include both technical and soft skills.
-        
-        Resume text:
-        {resume_text}
-        
-        Return a JSON array of skills:
-        ["skill1", "skill2", ...]
-        """
-        
-    def process_output(self, output: str) -> dict:
-        skills = self.parse_json(output)
-        return {"skills": skills}
+# Initialize the client
+client = CVInsightClient()
+
+# Create the custom plugin
+job_description = "Looking for a Python developer with 3+ years of experience..."
+job_match_plugin = JobMatchPlugin(job_description)
+
+# Register your plugin with the client
+client._plugin_manager.register_plugin(job_match_plugin)
+
+# Process a resume with your custom plugin
+result = client.extract_all("path/to/resume.pdf")
+
+# Access the results from your custom plugin
+match_data = result.get("job_match_analyzer", {})
+print(f"Match score: {match_data.get('match_score')}/100")
 ```
 
-### 2. Experience Extractor Plugin
+### Registering Multiple Plugins
 
 ```python
-from base_plugins.base import BasePlugin
+from cvinsight import CVInsightClient
+from your_plugins import JobMatchPlugin, SkillsCategorizer, KeywordAnalyzer
 
-class ExperienceExtractorPlugin(BasePlugin):
-    def __init__(self):
-        super().__init__()
-        
-    @property
-    def name(self) -> str:
-        return "ExperienceExtractorPlugin"
-        
-    @property
-    def version(self) -> str:
-        return "1.0.0"
-        
-    @property
-    def description(self) -> str:
-        return "Extracts work experience from resume"
-        
-    @property
-    def category(self) -> str:
-        return "experience"
-        
-    def get_model(self) -> str:
-        return "gemini-2.0-flash"
-        
-    def get_prompt_template(self) -> str:
-        return """
-        Extract work experience from the resume text.
-        For each position, include:
-        - Company name
-        - Role/title
-        - Start date
-        - End date
-        - Location
-        
-        Resume text:
-        {resume_text}
-        
-        Return a JSON array of experiences:
-        [
-            {
-                "company": "Company Name",
-                "role": "Job Title",
-                "start_date": "YYYY-MM",
-                "end_date": "YYYY-MM",
-                "location": "City, Country"
-            },
-            ...
-        ]
-        """
-        
-    def process_output(self, output: str) -> dict:
-        experiences = self.parse_json(output)
-        return {"work_experiences": experiences}
+# Initialize the client
+client = CVInsightClient()
+
+# Create and register multiple plugins
+plugins = [
+    JobMatchPlugin("Software Developer job description..."),
+    SkillsCategorizer(),
+    KeywordAnalyzer(keywords=["python", "machine learning", "data science"])
+]
+
+# Register all plugins
+for plugin in plugins:
+    client._plugin_manager.register_plugin(plugin)
+
+# Process a resume with all registered plugins
+result = client.extract_all("path/to/resume.pdf")
 ```
 
-## Plugin Management
+## Plugin Best Practices
 
-### Loading Plugins
+1. **Focus on Single Responsibility**
+   - Each plugin should do one thing well
+   - Split complex functionality into multiple plugins
 
-The system automatically loads plugins from:
-1. `base_plugins/` directory
-2. `custom_plugins/` directory
+2. **Optimize Prompts**
+   - Keep prompts clear and concise
+   - Only request necessary information
+   - Use examples for complex formats
 
-### Plugin Configuration
+3. **Handle Errors Gracefully**
+   - Include error handling in your plugins
+   - Provide default values for missing data
+   - Log meaningful error messages
 
-Plugins can be configured through:
-1. Environment variables
-2. Configuration files
-3. Command-line arguments
+4. **Token Usage**
+   - Monitor and optimize token usage
+   - Avoid unnecessarily large prompts
+   - Consider batching related requests
+
+5. **Testing**
+   - Test plugins with various resume formats
+   - Verify output structure matches your model
+   - Check edge cases and error handling
+
+## Advanced Plugin Topics
 
 ### Plugin Dependencies
 
-Handle plugin dependencies by:
-1. Declaring dependencies in plugin metadata
-2. Checking dependencies during initialization
-3. Loading dependencies in correct order
+If your plugin depends on other plugins:
 
-## Next Steps
+```python
+class DependentPlugin(ExtractorPlugin):
+    def __init__(self, llm_service=None):
+        self.llm_service = llm_service
+        self.dependencies = ["skills_extractor"]  # Plugin names this plugin depends on
+    
+    def process_resume(self, resume, extracted_text=None):
+        # Access data from dependencies
+        skills = resume.get("skills", [])
+        # Process with dependency data
+        return {"processed_skills": self.process_skills(skills)}
+```
 
-- Review the [Technical Documentation](Technical-Documentation) for detailed technical documentation
-- Check out the [Examples & Tutorials](Examples-and-Tutorials) for more plugin examples
-- Join the community to share and learn about plugins 
+### Plugin Configuration
+
+For configurable plugins:
+
+```python
+class ConfigurablePlugin(ExtractorPlugin):
+    def __init__(self, config=None, llm_service=None):
+        self.llm_service = llm_service
+        self.config = config or {}
+        
+    def initialize(self) -> None:
+        # Set defaults for missing config
+        self.threshold = self.config.get("threshold", 0.5)
+        self.max_results = self.config.get("max_results", 10)
+```
+
+### Stateful Plugins
+
+If your plugin needs to maintain state:
+
+```python
+class StatefulPlugin(ExtractorPlugin):
+    def __init__(self, llm_service=None):
+        self.llm_service = llm_service
+        self.processed_count = 0
+        self.results_cache = {}
+        
+    def extract(self, text):
+        result, token_usage = super().extract(text)
+        self.processed_count += 1
+        self.results_cache[hash(text)] = result
+        return result, token_usage
+```

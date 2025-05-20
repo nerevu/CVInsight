@@ -1,28 +1,35 @@
 # Installation & Setup
 
-This guide will help you set up the Resume Analysis tool on your system.
+This guide will help you set up and configure the CVInsight package on your system.
 
 ## System Requirements
 
-- Python 3.8 or higher
+- Python 3.9 or higher
 - Google API key for Gemini LLM
 - Sufficient disk space for processing resumes and storing results
 - Internet connection for API access
 
-## Step-by-Step Installation
+## Installation Options
 
-### 1. Clone the Repository
+### Option 1: Install from PyPI (Recommended)
+
+The simplest way to install CVInsight is directly from PyPI:
 
 ```bash
-git clone https://github.com/yourusername/Resume-Analysis.git
-cd Resume-Analysis
+pip install cvinsight
 ```
 
-### 2. Set Up Virtual Environment
+This will install the package and all its dependencies.
 
-Create and activate a virtual environment:
+### Option 2: Install from Source
+
+If you want to install from source (e.g., for development):
 
 ```bash
+# Clone the repository
+git clone https://github.com/Gaurav-Kumar98/CVInsight.git
+cd CVInsight
+
 # Create virtual environment
 python -m venv .venv
 
@@ -31,102 +38,140 @@ python -m venv .venv
 .venv\Scripts\activate
 # On Linux/Mac:
 source .venv/bin/activate
+
+# Install in development mode
+pip install -e .
 ```
 
-### 3. Install Dependencies
+## API Key Setup
 
-```bash
-pip install -r requirements.txt
-```
+CVInsight requires a Google API key to access the Gemini models:
 
-### 4. Configure Environment Variables
+1. Visit [Google AI Studio](https://makersuite.google.com/)
+2. Sign in with your Google account
+3. Navigate to the "Get API key" option
+4. Create a new API key
 
-1. Copy the example environment file:
+You can provide the API key in several ways:
+
+1. Directly to the client:
+   ```python
+   from cvinsight import CVInsightClient
+   client = CVInsightClient(api_key="your_google_api_key")
+   ```
+
+2. Set as environment variable:
    ```bash
-   cp .env.example .env
+   # Linux/Mac
+   export GOOGLE_API_KEY=your_google_api_key
+   
+   # Windows (Command Prompt)
+   set GOOGLE_API_KEY=your_google_api_key
+   
+   # Windows (PowerShell)
+   $env:GOOGLE_API_KEY="your_google_api_key"
    ```
 
-2. Edit the `.env` file with your settings:
-   ```env
-   GOOGLE_API_KEY=your_api_key_here
-   DEFAULT_LLM_MODEL=gemini-2.0-flash
-   RESUME_DIR=./Resumes
-   OUTPUT_DIR=./Results
-   LOG_LEVEL=INFO
-   LOG_FILE=resume_analysis.log
-   TOKEN_LOG_RETENTION_DAYS=7
-   LOG_MAX_SIZE_MB=5
-   LOG_BACKUP_COUNT=3
-   DEBUG=False
-   ```
+## Directory Structure
 
-### 5. Create Required Directories
+When using CVInsight as a package, the default directory structure is:
 
-```bash
-mkdir Resumes
-mkdir Results
-mkdir logs
+```
+your_project/
+├── logs/             # Token usage logs will be saved here (created automatically)
+└── your_script.py    # Your Python script using CVInsight
+```
+
+For the command-line interface:
+
+```
+your_project/
+├── Resumes/          # Place your resume files here
+├── Results/          # Processed results will be saved here
+├── logs/             # Token usage logs will be saved here
+└── (Other files)
 ```
 
 ## Configuration Options
 
-### Environment Variables
+### Client Configuration
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `GOOGLE_API_KEY` | Your Google API key for Gemini LLM | - | Yes |
-| `DEFAULT_LLM_MODEL` | Model name to use | gemini-2.0-flash | No |
-| `RESUME_DIR` | Directory containing resume files | ./Resumes | No |
-| `OUTPUT_DIR` | Directory for processed results | ./Results | No |
-| `LOG_LEVEL` | Logging level (INFO, DEBUG, etc.) | INFO | No |
-| `LOG_FILE` | Path to log file | resume_analysis.log | No |
-| `TOKEN_LOG_RETENTION_DAYS` | Days to keep token usage logs | 7 | No |
-| `LOG_MAX_SIZE_MB` | Max size of log files before rotation | 5 | No |
-| `LOG_BACKUP_COUNT` | Number of backup log files | 3 | No |
-| `DEBUG` | Enable debug mode | False | No |
+You can configure the CVInsight client in your code:
 
-### Directory Structure
+```python
+from cvinsight import CVInsightClient
 
+# Initialize with custom model
+client = CVInsightClient(
+    api_key="your_google_api_key",  # Optional if set as environment variable
+    model_name="gemini-2.0-flash"   # Optional, uses default if not specified
+)
 ```
-Resume-Analysis/
-├── Resumes/           # Place your resume files here
-├── Results/           # Processed results will be saved here
-├── logs/             # Log files directory
-├── base_plugins/     # Core plugin implementations
-├── custom_plugins/   # User-defined plugins
-├── models/          # Data models
-├── utils/           # Utility functions
-└── main.py          # Main application entry point
+
+### Command-Line Options
+
+The CVInsight CLI offers several options:
+
+```bash
+# Process a single resume file
+cvinsight --resume example.pdf
+
+# Specify output directory
+cvinsight --resume example.pdf --output ./results
+
+# List available plugins
+cvinsight --list-plugins
+
+# Use specific plugins
+cvinsight --resume example.pdf --plugins profile_extractor,skills_extractor
+
+# Output as JSON
+cvinsight --resume example.pdf --json
 ```
+
+## Free Tier Limitations
+
+Google offers a generous free tier for the Gemini API:
+
+- **Cost**: Input and output tokens are completely free on the free tier
+- **Models**: Access to models like Gemini 1.5 Flash and Gemini 2.0 Flash
+- **Rate Limits**:
+  - 15 requests per minute (RPM)
+  - 1,000,000 tokens per minute (TPM)
+  - 1,500 requests per day (RPD)
+
+For the CVInsight package, these limits translate to:
+- **Maximum ~130 resumes per minute** within the token limit
+- **Up to 1,500 resumes per day** due to the daily request limit
+
+This is adequate for personal use, small businesses, or even medium-sized recruiting operations.
 
 ## Troubleshooting Common Issues
 
 ### 1. API Key Issues
 
 - Ensure your Google API key is valid and has access to Gemini models
-- Check if the API key is properly set in the `.env` file
 - Verify there are no extra spaces or quotes around the API key
+- Try using the key directly in the client constructor
 
-### 2. Virtual Environment Problems
+### 2. Installation Problems
 
-- Make sure you're using the correct Python version
-- Try recreating the virtual environment if dependencies aren't installing correctly
-- Verify the virtual environment is activated before running commands
+- Make sure you're using Python 3.9 or higher
+- Try upgrading pip: `python -m pip install --upgrade pip`
+- Check if all dependencies were installed correctly
 
 ### 3. Permission Issues
 
 - Ensure you have write permissions in the project directory
-- Check if the logs and Results directories are writable
-- Verify file permissions for resume files
+- Check if the logs directory is writable
 
-### 4. Dependencies Installation
+### 4. Import Errors
 
-- If pip install fails, try updating pip: `python -m pip install --upgrade pip`
-- For Windows users, some packages might require Visual C++ build tools
-- Check the requirements.txt file for any platform-specific dependencies
+- Verify that the package was installed correctly
+- Make sure you're using the correct import statements
 
 ## Next Steps
 
-- Read the [User Guide](User-Guide) to learn how to use the tool
+- Read the [User Guide](User-Guide) to learn how to use the package
 - Check out the [Examples & Tutorials](Examples-and-Tutorials) for practical usage
 - Review the [Plugin System](Plugin-System) documentation if you want to extend functionality 

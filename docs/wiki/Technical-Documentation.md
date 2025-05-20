@@ -1,308 +1,441 @@
 # Technical Documentation
 
-This page provides detailed technical documentation about the internal implementation of the Resume Analysis tool.
+This page provides detailed technical documentation about the internal implementation of the CVInsight package.
 
-## Core Classes
+## Core Components
+
+### CVInsightClient
+
+The main client interface for interacting with the CVInsight package.
+
+```python
+class CVInsightClient:
+    """Client for CVInsight resume analysis."""
+    
+    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
+        """Initialize the CVInsight client."""
+        # Store API key in environment if provided
+        if api_key:
+            os.environ["GOOGLE_API_KEY"] = api_key
+            
+        # Initialize services
+        self._llm_service = LLMService(model_name=model_name)
+        self._plugin_manager = PluginManager(self._llm_service)
+        self._plugin_manager.load_all_plugins()
+        self._processor = ResumeProcessor(plugin_manager=self._plugin_manager)
+    
+    def extract_all(self, file_path: str, log_token_usage: bool = True) -> Dict[str, Any]:
+        """Extract all information from a resume."""
+        pass
+        
+    def extract_profile(self, file_path: str) -> Dict[str, Any]:
+        """Extract profile information from a resume."""
+        pass
+        
+    def extract_education(self, file_path: str) -> List[Dict[str, Any]]:
+        """Extract education information from a resume."""
+        pass
+        
+    def extract_experience(self, file_path: str) -> List[Dict[str, Any]]:
+        """Extract experience information from a resume."""
+        pass
+        
+    def extract_skills(self, file_path: str) -> Dict[str, Any]:
+        """Extract skills information from a resume."""
+        pass
+        
+    def extract_years_of_experience(self, file_path: str) -> Optional[str]:
+        """Extract years of experience from a resume."""
+        pass
+        
+    def analyze_resume(self, resume_path: Union[str, pathlib.Path], 
+                      plugins: Optional[List[str]] = None,
+                      log_token_usage: bool = True) -> Dict[str, Any]:
+        """Analyze a resume using specific plugins."""
+        pass
+        
+    def list_all_plugins(self) -> List[Dict[str, Any]]:
+        """List all available plugins."""
+        pass
+        
+    def list_plugins_by_category(self, category: str) -> List[Dict[str, Any]]:
+        """List plugins by category."""
+        pass
+```
 
 ### BasePlugin
 
 The abstract base class for all plugins.
 
 ```python
-from abc import ABC, abstractmethod
-
 class BasePlugin(ABC):
+    """Abstract base class for all CVInsight plugins."""
+    
+    def __init__(self, llm_service: LLMService):
+        """Initialize the plugin with a language model service."""
+        self.llm_service = llm_service
+    
     @property
     @abstractmethod
-    def name(self) -> str:
-        """Returns the unique name of the plugin."""
+    def metadata(self) -> PluginMetadata:
+        """Get the metadata of the plugin."""
         pass
-        
-    @property
+    
     @abstractmethod
-    def version(self) -> str:
-        """Returns the version of the plugin."""
+    def initialize(self) -> None:
+        """Initialize the plugin."""
         pass
-        
-    @property
+    
     @abstractmethod
-    def description(self) -> str:
-        """Returns a description of what the plugin does."""
+    def get_model(self) -> Type[BaseModel]:
+        """Get the Pydantic model for the plugin."""
         pass
-        
-    @property
-    @abstractmethod
-    def category(self) -> str:
-        """Returns the category of the plugin."""
-        pass
-        
-    @abstractmethod
-    def get_model(self) -> str:
-        """Returns the LLM model to use."""
-        pass
-        
+    
     @abstractmethod
     def get_prompt_template(self) -> str:
-        """Returns the prompt template for the LLM."""
+        """Get the prompt template for the plugin."""
         pass
-        
+    
     @abstractmethod
-    def process_output(self, output: str) -> dict:
-        """Processes the LLM output and returns structured data."""
+    def get_input_variables(self) -> List[str]:
+        """Get the input variables for the prompt template."""
         pass
+    
+    def prepare_input_data(self, extracted_text: str) -> Dict[str, Any]:
+        """Prepare input data for the prompt template."""
+        return {"text": extracted_text}
+    
+    def extract(self, extracted_text: str) -> Tuple[Dict[str, Any], Optional[Dict[str, int]]]:
+        """Extract information from text."""
+        pass
+```
+
+### ExtractorPlugin
+
+The base class for extractor plugins.
+
+```python
+class ExtractorPlugin(BasePlugin):
+    """Base class for all extractor plugins."""
+    
+    @property
+    @abstractmethod
+    def metadata(self) -> PluginMetadata:
+        """Get the metadata of the plugin."""
+        pass
+    
+    def extract(self, text: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Extract information from text."""
+        # Prepare prompt from template
+        prompt_template = self.get_prompt_template()
+        input_data = self.prepare_input_data(text)
+        input_variables = self.get_input_variables()
+        model = self.get_model()
         
-    def parse_json(self, text: str) -> dict:
-        """Utility method to parse JSON from text."""
+        # Call LLM service
+        result, token_usage = self.llm_service.extract_with_llm(
+            model,
+            prompt_template,
+            input_variables,
+            input_data
+        )
+        
+        # Add extractor name to token usage
+        token_usage["extractor"] = self.metadata.name
+        
+        # Process and return the result
+        processed_result = self.process_output(result)
+        
+        return processed_result, token_usage
+        
+    def process_output(self, result: Any) -> Dict[str, Any]:
+        """Process the output from the LLM."""
         pass
 ```
 
 ### PluginManager
 
-Manages plugin discovery and loading.
+Manages plugin discovery, loading, and access.
 
 ```python
 class PluginManager:
-    def __init__(self):
-        self.plugins = {}
+    """Manager for CVInsight plugins."""
+    
+    def __init__(self, llm_service: Optional[LLMService] = None):
+        """Initialize the plugin manager."""
+        self.llm_service = llm_service
+        self.plugins: Dict[str, BasePlugin] = {}
         
-    def load_plugins(self):
-        """Loads all available plugins."""
+    def load_all_plugins(self) -> Dict[str, BasePlugin]:
+        """Load all available plugins."""
         pass
         
-    def get_plugin(self, name: str) -> BasePlugin:
-        """Returns a plugin by name."""
-        pass
+    def get_plugin(self, name: str) -> Optional[BasePlugin]:
+        """Get a plugin by name."""
+        return self.plugins.get(name)
         
-    def get_plugins_by_category(self, category: str) -> list:
-        """Returns all plugins in a category."""
-        pass
+    def get_plugins_by_category(self, category: str) -> Dict[str, BasePlugin]:
+        """Get all plugins in a category."""
+        return {name: plugin for name, plugin in self.plugins.items() 
+                if plugin.metadata.category == category}
+                
+    def get_extractor_plugins(self) -> Dict[str, ExtractorPlugin]:
+        """Get all extractor plugins."""
+        return {name: plugin for name, plugin in self.plugins.items() 
+                if isinstance(plugin, ExtractorPlugin)}
+                
+    def register_plugin(self, plugin: BasePlugin) -> None:
+        """Register a new plugin."""
+        self.plugins[plugin.metadata.name] = plugin
 ```
 
-### ResumeProcessor
+### PluginResumeProcessor
 
-Processes resumes using plugins.
+Processes resumes using the plugin system.
 
 ```python
-class ResumeProcessor:
-    def __init__(self, plugins: list[BasePlugin]):
-        self.plugins = plugins
+class PluginResumeProcessor:
+    """Class for processing resumes using the plugin system."""
+    
+    def __init__(self, resume_dir: str = "./Resumes", output_dir: str = "./Results", 
+                 log_dir: str = "./logs/token_usage", plugin_manager: Optional[Any] = None):
+        """Initialize the PluginResumeProcessor."""
+        self.resume_dir = resume_dir
+        self.output_dir = output_dir
+        self.log_dir = log_dir
+        self.plugin_manager = plugin_manager
         
-    async def process_resume(self, resume_text: str) -> dict:
-        """Processes a resume using all plugins concurrently."""
+        # Ensure output directories exist
+        os.makedirs(self.output_dir, exist_ok=True)
+        os.makedirs(self.log_dir, exist_ok=True)
+    
+    def process_resume(self, pdf_file_path: str) -> Optional[Resume]:
+        """Process a single resume file using plugins."""
         pass
         
-    def process_resume_sync(self, resume_text: str) -> dict:
-        """Processes a resume synchronously."""
+    def process_all_resumes(self) -> Tuple[int, int]:
+        """Process all resumes in the resume directory."""
+        pass
+        
+    def save_resume(self, resume: Resume) -> None:
+        """Save a processed resume to the output directory."""
+        pass
+        
+    def print_token_usage_report(self, resume: Resume, log_file: str = None) -> None:
+        """Print a report of token usage for a resume."""
         pass
 ```
 
 ### LLMService
 
-Handles interactions with the LLM API.
+Centralized service for interacting with language models.
 
 ```python
 class LLMService:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
+    """Service for interacting with LLM API."""
+    
+    def __init__(self, model_name=None, api_key=None):
+        """Initialize the LLM service."""
+        self.model_name = model_name or config.DEFAULT_LLM_MODEL
+        self.api_key = api_key or config.GOOGLE_API_KEY or os.environ.get("GOOGLE_API_KEY")
         
-    async def generate(self, prompt: str, model: str) -> str:
-        """Generates text using the LLM."""
+        if not self.api_key:
+            raise ValueError("Google API key is required.")
+            
+        self.llm = self._get_llm()
+    
+    def _get_llm(self):
+        """Get a LLM instance."""
+        return ChatGoogleGenerativeAI(api_key=self.api_key, model=self.model_name)
+    
+    def create_extraction_chain(self, pydantic_model: Type[BaseModel], prompt_template: str, input_variables: list):
+        """Create a chain for extracting information using a language model."""
         pass
-        
-    def get_token_count(self, text: str) -> int:
-        """Returns the token count for text."""
+    
+    def extract_with_llm(self, pydantic_model: Type[BaseModel], prompt_template: str, 
+                        input_variables: list, input_data: dict) -> Tuple[Any, Dict[str, int]]:
+        """Extract information from text using a language model."""
         pass
 ```
 
 ## Data Models
 
-### ResumeData
+### PluginMetadata
 
 ```python
-@dataclass
-class ResumeData:
-    name: str
-    contact_number: str
-    email: str
-    skills: list[str]
-    educations: list[Education]
-    work_experiences: list[Experience]
-    YoE: str
+class PluginMetadata:
+    """Metadata for a plugin."""
+    name: str           # Unique identifier for the plugin
+    version: str        # Version number (semantic versioning recommended)
+    description: str    # Brief description of what the plugin does
+    category: str       # Plugin category (use PluginCategory enum)
+    author: str         # Plugin author name
 ```
 
-### Education
+### PluginCategory
 
 ```python
-@dataclass
-class Education:
+class PluginCategory:
+    """Categories for plugins."""
+    BASE = "BASE"           # Core functionality
+    EXTRACTOR = "EXTRACTOR" # Data extraction
+    PROCESSOR = "PROCESSOR" # Data processing
+    ANALYZER = "ANALYZER"   # Data analysis
+    CUSTOM = "CUSTOM"       # Custom functionality
+    UTILITY = "UTILITY"     # Utility functions
+```
+
+### Resume
+
+The main data model for storing resume information.
+
+```python
+class Resume(BaseModel):
+    """A complete resume with all extracted information."""
+    file_path: Optional[str] = None
+    name: Optional[str] = None
+    contact_number: Optional[str] = None
+    email: Optional[str] = None
+    skills: List[str] = Field(default_factory=list)
+    educations: List[Education] = Field(default_factory=list)
+    work_experiences: List[WorkExperience] = Field(default_factory=list)
+    YoE: Optional[str] = None
+    token_usage: Optional[Dict[str, Any]] = None
+    
+    @classmethod
+    def from_extractors_output(cls, profile, skills, education, experience, yoe, file_path=None, token_usage=None):
+        """Create a Resume object from the output of various extractors."""
+        pass
+        
+    def add_plugin_data(self, plugin_name: str, data: Any) -> None:
+        """Add custom plugin data to the resume."""
+        pass
+```
+
+### Other Models
+
+```python
+class ResumeProfile(BaseModel):
+    """Profile information from a resume."""
+    name: Optional[str] = None
+    contact_number: Optional[str] = None
+    email: Optional[str] = None
+
+class Education(BaseModel):
+    """Educational information from a resume."""
     institution: str
-    start_date: str
-    end_date: str
-    location: str
-    degree: str
-```
+    degree: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    location: Optional[str] = None
 
-### Experience
-
-```python
-@dataclass
-class Experience:
+class WorkExperience(BaseModel):
+    """Work experience information from a resume."""
     company: str
-    start_date: str
-    end_date: str
-    location: str
     role: str
-```
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
 
-## Configuration
+class Skills(BaseModel):
+    """Skills information from a resume."""
+    skills: List[str] = Field(default_factory=list)
 
-### Environment Variables
-
-```python
-class Config:
-    GOOGLE_API_KEY: str
-    DEFAULT_LLM_MODEL: str
-    RESUME_DIR: str
-    OUTPUT_DIR: str
-    LOG_LEVEL: str
-    LOG_FILE: str
-    TOKEN_LOG_RETENTION_DAYS: int
-    LOG_MAX_SIZE_MB: int
-    LOG_BACKUP_COUNT: int
-    DEBUG: bool
+class YearsOfExperience(BaseModel):
+    """Years of experience information from a resume."""
+    YoE: str
 ```
 
 ## Utility Functions
 
-### File Handling
+### File Reading
 
 ```python
-def read_resume_file(file_path: str) -> str:
-    """Reads and extracts text from a resume file."""
-    pass
+def read_file(file_path: str) -> str:
+    """Read and extract text from a file."""
+    # Validate the file
+    is_valid, message = validate_file(file_path)
+    if not is_valid:
+        raise ValueError(f"Invalid file: {message}")
     
-def save_results(results: dict, output_path: str):
-    """Saves processing results to a file."""
-    pass
-```
-
-### Logging
-
-```python
-def setup_logging(log_level: str, log_file: str):
-    """Sets up logging configuration."""
-    pass
+    # Get the file extension
+    file_extension = os.path.splitext(file_path)[1].lower()
     
-def log_token_usage(resume_file: str, usage: dict):
-    """Logs token usage information."""
-    pass
+    # Extract text based on file extension
+    if file_extension == '.pdf':
+        return extract_text_from_pdf(file_path)
+    elif file_extension == '.docx':
+        return extract_text_from_docx(file_path)
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}")
 ```
 
-### JSON Processing
+### Token Usage Tracking
 
 ```python
-def parse_json(text: str) -> dict:
-    """Parses JSON from text."""
-    pass
+class TokenUsageCallbackHandler(BaseCallbackHandler):
+    """Callback handler for tracking token usage."""
     
-def format_json(data: dict) -> str:
-    """Formats data as JSON string."""
-    pass
+    def __init__(self):
+        """Initialize the callback handler."""
+        super().__init__()
+        self.token_usage = {
+            "total_tokens": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "source": "not_set"
+        }
+        
+    def on_llm_end(self, response: LLMResult, **kwargs) -> None:
+        """Extract token usage from the LLM response."""
+        pass
 ```
 
-## Error Handling
-
-### Custom Exceptions
+## CLI Interface
 
 ```python
-class PluginError(Exception):
-    """Base exception for plugin-related errors."""
-    pass
-    
-class LLMError(Exception):
-    """Exception for LLM-related errors."""
-    pass
-    
-class FileError(Exception):
-    """Exception for file-related errors."""
+@click.command(help="CVInsight - AI-powered resume analysis")
+@click.option('--resume', type=str, help='Process a single resume file')
+@click.option('--output', type=str, help='Output directory for results')
+@click.option('--list-plugins', is_flag=True, help='List available plugins')
+@click.option('--plugins', type=str, help='Comma-separated list of plugins to use')
+@click.option('--json', 'json_output', is_flag=True, help='Output results as JSON')
+def main(resume: Optional[str], output: Optional[str], list_plugins: bool, plugins: Optional[str], json_output: bool):
+    """Entry point for the CVInsight CLI."""
     pass
 ```
 
-## Async Support
+## Package Structure
 
-The implementation provides both synchronous and asynchronous interfaces:
-
-```python
-# Synchronous
-processor = ResumeProcessor(plugins)
-results = processor.process_resume_sync(resume_text)
-
-# Asynchronous
-async def process_resume():
-    processor = ResumeProcessor(plugins)
-    results = await processor.process_resume(resume_text)
 ```
-
-## Type Hints
-
-All functions and methods include type hints for better IDE support:
-
-```python
-from typing import List, Dict, Optional
-
-def process_resume(
-    text: str,
-    plugins: List[BasePlugin]
-) -> Dict[str, Any]:
-    pass
-```
-
-## Constants
-
-```python
-# File extensions
-PDF_EXTENSION = ".pdf"
-DOCX_EXTENSION = ".docx"
-
-# Log levels
-LOG_LEVELS = {
-    "DEBUG": logging.DEBUG,
-    "INFO": logging.INFO,
-    "WARNING": logging.WARNING,
-    "ERROR": logging.ERROR,
-    "CRITICAL": logging.CRITICAL
-}
-
-# Default values
-DEFAULT_MODEL = "gemini-2.0-flash"
-DEFAULT_LOG_LEVEL = "INFO"
-DEFAULT_LOG_FILE = "resume_analysis.log"
-```
-
-## Best Practices
-
-1. **Error Handling**
-   - Use custom exceptions for specific error cases
-   - Provide meaningful error messages
-   - Log errors appropriately
-
-2. **Type Safety**
-   - Use type hints consistently
-   - Validate input data
-   - Handle edge cases
-
-3. **Performance**
-   - Use async/await for I/O operations
-   - Implement caching where appropriate
-   - Optimize resource usage
-
-4. **Testing**
-   - Write unit tests for all components
-   - Test edge cases and error conditions
-   - Mock external dependencies
-
-## Next Steps
-
-- Review the [Plugin System](Plugin-System) documentation
-- Check out the [Examples & Tutorials](Examples-and-Tutorials)
-- Join the community for support and discussions 
+cvinsight/
+├── __init__.py                  # Package exports
+├── client.py                    # CVInsightClient implementation
+├── api.py                       # Functional API
+├── cli.py                       # Command-line interface
+├── base_plugins/                # Base plugins
+│   ├── __init__.py
+│   ├── base.py                  # Abstract base classes
+│   ├── plugin_manager.py        # Plugin manager
+│   ├── profile_extractor/       # Profile extractor plugin
+│   ├── skills_extractor/        # Skills extractor plugin
+│   ├── education_extractor/     # Education extractor plugin
+│   ├── experience_extractor/    # Experience extractor plugin
+│   └── yoe_extractor/           # YoE extractor plugin
+├── core/                        # Core functionality
+│   ├── __init__.py
+│   ├── config.py                # Configuration settings
+│   ├── constants.py             # Constants
+│   ├── llm_service.py           # LLM service
+│   ├── resume_processor.py      # Resume processor
+│   └── utils/                   # Utility functions
+├── models/                      # Data models
+│   ├── __init__.py
+│   └── resume_models.py         # Resume-related models
+├── plugins/                     # Plugin system
+│   ├── __init__.py
+│   └── base.py                  # Plugin interfaces
+└── custom_plugins/              # Custom plugins directory
+    └── __init__.py
+``` 

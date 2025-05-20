@@ -16,8 +16,8 @@ Thank you for your interest in contributing to the Resume Analysis project! This
 1. Fork the repository
 2. Clone your fork:
    ```bash
-   git clone https://github.com/yourusername/Resume-Analysis.git
-   cd Resume-Analysis
+   git clone https://github.com/yourusername/CVInsight.git
+   cd CVInsight
    ```
 3. Create a virtual environment:
    ```bash

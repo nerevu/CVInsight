@@ -1,319 +1,356 @@
 # Examples & Tutorials
 
-This page provides practical examples and tutorials for using the Resume Analysis tool.
+This page provides practical examples and tutorials for using the CVInsight package.
 
 ## Basic Usage Examples
 
-### 1. Process a Single Resume
+### 1. Using the Client Interface
 
 ```python
-from resume_processor import ResumeProcessor
-from plugin_manager import PluginManager
+from cvinsight import CVInsightClient
 
-# Initialize plugin manager and load plugins
-plugin_manager = PluginManager()
-plugin_manager.load_plugins()
+# Initialize the client (with your API key)
+client = CVInsightClient(api_key="your_google_api_key")
 
-# Create resume processor with all plugins
-processor = ResumeProcessor(plugin_manager.get_all_plugins())
+# Process a single resume and get all information
+results = client.extract_all("path/to/resume.pdf")
 
-# Process a single resume
-results = processor.process_resume_sync("path/to/resume.pdf")
-print(results)
+# Access the extracted information
+print(f"Name: {results.get('name')}")
+print(f"Email: {results.get('email')}")
+print(f"Skills: {', '.join(results.get('skills', []))}")
+
+# Extract specific information only
+profile = client.extract_profile("path/to/resume.pdf")
+education = client.extract_education("path/to/resume.pdf")
+experience = client.extract_experience("path/to/resume.pdf")
+skills = client.extract_skills("path/to/resume.pdf")
+years_of_experience = client.extract_years_of_experience("path/to/resume.pdf")
 ```
 
-### 2. Process Multiple Resumes
+### 2. Using the Functional API
 
 ```python
-import asyncio
-from pathlib import Path
+from cvinsight import extract_all, extract_profile, extract_skills
 
-async def process_multiple_resumes():
-    # Initialize components
-    plugin_manager = PluginManager()
-    plugin_manager.load_plugins()
-    processor = ResumeProcessor(plugin_manager.get_all_plugins())
-    
-    # Get all resume files
-    resume_dir = Path("Resumes")
-    resume_files = list(resume_dir.glob("*.pdf")) + list(resume_dir.glob("*.docx"))
-    
-    # Process all resumes concurrently
-    tasks = [processor.process_resume(str(file)) for file in resume_files]
-    results = await asyncio.gather(*tasks)
-    
-    return results
+# Extract all information at once
+results = extract_all("path/to/resume.pdf")
 
-# Run the async function
-results = asyncio.run(process_multiple_resumes())
+# Extract specific information
+profile = extract_profile("path/to/resume.pdf")
+skills = extract_skills("path/to/resume.pdf")
+
+# Print the results
+print(f"Name: {profile.get('name')}")
+print(f"Email: {profile.get('email')}")
+print(f"Skills: {', '.join(skills.get('skills', []))}")
 ```
 
-### 3. Custom Plugin Example
+### 3. Command-Line Interface
 
-```python
-from base_plugins.base import BasePlugin
+```bash
+# Install the package
+pip install cvinsight
 
-class CertificationExtractorPlugin(BasePlugin):
-    def __init__(self):
-        super().__init__()
-        
-    @property
-    def name(self) -> str:
-        return "CertificationExtractorPlugin"
-        
-    @property
-    def version(self) -> str:
-        return "1.0.0"
-        
-    @property
-    def description(self) -> str:
-        return "Extracts certifications from resume"
-        
-    @property
-    def category(self) -> str:
-        return "certifications"
-        
-    def get_model(self) -> str:
-        return "gemini-2.0-flash"
-        
-    def get_prompt_template(self) -> str:
-        return """
-        Extract certifications from the resume text.
-        For each certification, include:
-        - Name of certification
-        - Issuing organization
-        - Date obtained
-        - Expiration date (if applicable)
-        
-        Resume text:
-        {resume_text}
-        
-        Return a JSON array of certifications:
-        [
-            {
-                "name": "Certification Name",
-                "organization": "Issuing Organization",
-                "date_obtained": "YYYY-MM",
-                "expiration_date": "YYYY-MM"
-            },
-            ...
-        ]
-        """
-        
-    def process_output(self, output: str) -> dict:
-        certifications = self.parse_json(output)
-        return {"certifications": certifications}
+# Process a resume and display results in the terminal
+cvinsight --resume path/to/resume.pdf
+
+# Output results as JSON
+cvinsight --resume path/to/resume.pdf --json
+
+# Save results to a specific directory
+cvinsight --resume path/to/resume.pdf --output ./results
+
+# List available plugins
+cvinsight --list-plugins
+
+# Use specific plugins only
+cvinsight --resume path/to/resume.pdf --plugins profile_extractor,skills_extractor
 ```
 
-## Advanced Tutorials
+## Processing Multiple Resumes
 
-### 1. Custom Plugin Development
-
-This tutorial shows how to create a custom plugin for extracting project experience.
+### 1. Process a Directory of Resumes
 
 ```python
-from base_plugins.base import BasePlugin
-from typing import List, Dict, Any
+import os
+from cvinsight import CVInsightClient
 
-class ProjectExperiencePlugin(BasePlugin):
-    def __init__(self):
-        super().__init__()
+# Initialize the client
+client = CVInsightClient()
+
+# Path to directory containing resumes
+resume_dir = "./Resumes"
+output_dir = "./Results"
+os.makedirs(output_dir, exist_ok=True)
+
+# Get all PDF and DOCX files
+resume_files = []
+for file in os.listdir(resume_dir):
+    if file.lower().endswith(('.pdf', '.docx')):
+        resume_files.append(os.path.join(resume_dir, file))
+
+# Process each resume
+for resume_file in resume_files:
+    try:
+        print(f"Processing {resume_file}...")
+        results = client.extract_all(resume_file)
         
-    @property
-    def name(self) -> str:
-        return "ProjectExperiencePlugin"
+        # Save results to JSON file
+        base_name = os.path.splitext(os.path.basename(resume_file))[0]
+        output_file = os.path.join(output_dir, f"{base_name}.json")
         
-    @property
-    def version(self) -> str:
-        return "1.0.0"
-        
-    @property
-    def description(self) -> str:
-        return "Extracts project experience from resume"
-        
-    @property
-    def category(self) -> str:
-        return "projects"
-        
-    def get_model(self) -> str:
-        return "gemini-2.0-flash"
-        
-    def get_prompt_template(self) -> str:
-        return """
-        Extract project experience from the resume text.
-        For each project, include:
-        - Project name
-        - Description
-        - Technologies used
-        - Duration
-        - Role in project
-        
-        Resume text:
-        {resume_text}
-        
-        Return a JSON array of projects:
-        [
-            {
-                "name": "Project Name",
-                "description": "Project description",
-                "technologies": ["tech1", "tech2"],
-                "duration": "X months",
-                "role": "Role in project"
-            },
-            ...
-        ]
-        """
-        
-    def process_output(self, output: str) -> Dict[str, Any]:
-        projects = self.parse_json(output)
-        return {"projects": projects}
-        
-    def validate_output(self, data: Dict[str, Any]) -> bool:
-        """Validate the processed output."""
-        if not isinstance(data.get("projects"), list):
-            return False
+        import json
+        with open(output_file, 'w') as f:
+            json.dump(results, f, indent=2)
             
-        for project in data["projects"]:
-            required_fields = ["name", "description", "technologies", "duration", "role"]
-            if not all(field in project for field in required_fields):
-                return False
-                
-        return True
+        print(f"Saved results to {output_file}")
+    except Exception as e:
+        print(f"Error processing {resume_file}: {e}")
 ```
 
-### 2. Token Usage Optimization
+## Custom Plugin Development
 
-This tutorial demonstrates how to optimize token usage in plugins.
+### 1. Creating a Simple Custom Plugin
 
 ```python
-from base_plugins.base import BasePlugin
-from llm_service import LLMService
+from cvinsight.base_plugins import ExtractorPlugin, PluginMetadata, PluginCategory
+from pydantic import BaseModel, Field
+from typing import Dict, Any, Type, List, Optional
 
-class OptimizedPlugin(BasePlugin):
-    def __init__(self):
-        super().__init__()
-        self.llm_service = LLMService()
-        
-    def get_prompt_template(self) -> str:
-        return """
-        Extract {category} from resume.
-        Format: JSON array of items.
-        
-        Text: {resume_text}
-        """
-        
-    async def process_with_retry(self, text: str, max_retries: int = 3) -> dict:
-        """Process with retry logic and token optimization."""
-        for attempt in range(max_retries):
-            try:
-                # Get token count
-                token_count = self.llm_service.get_token_count(text)
-                
-                # If text is too long, truncate it
-                if token_count > 4000:  # Example limit
-                    text = self.truncate_text(text)
-                
-                # Process with optimized prompt
-                output = await self.llm_service.generate(
-                    self.get_prompt_template().format(
-                        category=self.category,
-                        resume_text=text
-                    ),
-                    self.get_model()
-                )
-                
-                return self.process_output(output)
-                
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    raise
-                await asyncio.sleep(1)  # Wait before retry
-                
-    def truncate_text(self, text: str, max_tokens: int = 4000) -> str:
-        """Truncate text to fit within token limit."""
-        # Implementation of text truncation
+# Define the data model for certifications
+class Certification(BaseModel):
+    """Model for certification information."""
+    name: str = Field(..., description="Name of the certification")
+    organization: str = Field(..., description="Organization that issued the certification")
+    date_obtained: Optional[str] = Field(None, description="Date when certification was obtained")
+    expiration_date: Optional[str] = Field(None, description="Expiration date if applicable")
+
+class Certifications(BaseModel):
+    """Model for certifications list."""
+    certifications: List[Certification] = Field(default_factory=list, description="List of certifications")
+
+# Define the certification extractor plugin
+class CertificationExtractorPlugin(ExtractorPlugin):
+    """Plugin to extract certifications from resumes."""
+    
+    def __init__(self, llm_service=None):
+        """Initialize the plugin."""
+        self.llm_service = llm_service
+    
+    @property
+    def metadata(self) -> PluginMetadata:
+        return PluginMetadata(
+            name="certification_extractor",
+            version="1.0.0",
+            description="Extracts certification information from resumes",
+            category=PluginCategory.EXTRACTOR,
+            author="Your Name"
+        )
+    
+    def initialize(self) -> None:
+        """Initialize the plugin."""
         pass
+    
+    def get_model(self) -> Type[BaseModel]:
+        """Get the Pydantic model for certifications."""
+        return Certifications
+    
+    def get_prompt_template(self) -> str:
+        """Get the prompt template for extracting certifications."""
+        return """
+        Extract certification information from the resume text.
+        For each certification, include name, issuing organization, date obtained, and expiration date.
+        
+        {format_instructions}
+        
+        Text:
+        {text}
+        """
+    
+    def get_input_variables(self) -> List[str]:
+        """Get the input variables for the prompt template."""
+        return ["text"]
 ```
 
-### 3. Concurrent Processing
-
-This tutorial shows how to implement efficient concurrent processing of resumes.
+### 2. Using a Custom Plugin
 
 ```python
-import asyncio
-from typing import List, Dict
-from pathlib import Path
-from resume_processor import ResumeProcessor
-from plugin_manager import PluginManager
+from cvinsight import CVInsightClient
+from custom_plugins import CertificationExtractorPlugin  # Import your custom plugin
 
-class ConcurrentResumeProcessor:
-    def __init__(self, max_concurrent: int = 5):
-        self.max_concurrent = max_concurrent
-        self.plugin_manager = PluginManager()
-        self.plugin_manager.load_plugins()
-        self.processor = ResumeProcessor(self.plugin_manager.get_all_plugins())
-        
-    async def process_batch(self, resume_files: List[Path]) -> List[Dict]:
-        """Process a batch of resumes with controlled concurrency."""
-        results = []
-        
-        # Process files in chunks to control concurrency
-        for i in range(0, len(resume_files), self.max_concurrent):
-            chunk = resume_files[i:i + self.max_concurrent]
-            tasks = [self.processor.process_resume(str(file)) for file in chunk]
-            chunk_results = await asyncio.gather(*tasks)
-            results.extend(chunk_results)
-            
-            # Optional: Add delay between chunks
-            if i + self.max_concurrent < len(resume_files):
-                await asyncio.sleep(1)
-                
-        return results
-        
-    async def process_directory(self, directory: str) -> List[Dict]:
-        """Process all resumes in a directory."""
-        resume_dir = Path(directory)
-        resume_files = list(resume_dir.glob("*.pdf")) + list(resume_dir.glob("*.docx"))
-        return await self.process_batch(resume_files)
+# Initialize the client
+client = CVInsightClient()
 
-# Usage example
-async def main():
-    processor = ConcurrentResumeProcessor(max_concurrent=5)
-    results = await processor.process_directory("Resumes")
-    print(f"Processed {len(results)} resumes")
+# Create and register the custom plugin
+cert_plugin = CertificationExtractorPlugin()
+client._plugin_manager.register_plugin(cert_plugin)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# Process a resume with the custom plugin
+results = client.extract_all("path/to/resume.pdf")
+
+# Access certification information
+certifications = results.get("certification_extractor", {}).get("certifications", [])
+for cert in certifications:
+    print(f"Certification: {cert.get('name')}")
+    print(f"  Organization: {cert.get('organization')}")
+    print(f"  Obtained: {cert.get('date_obtained')}")
+    print(f"  Expires: {cert.get('expiration_date')}")
+```
+
+## Advanced Examples
+
+### 1. Job Matching Plugin
+
+This example demonstrates how to create a plugin that matches a resume against a job description:
+
+```python
+from cvinsight.base_plugins import ExtractorPlugin, PluginMetadata, PluginCategory
+from pydantic import BaseModel, Field
+from typing import Dict, Any, Type, List
+
+class JobMatch(BaseModel):
+    """Model for job matching results."""
+    match_percentage: int = Field(..., description="Match percentage from 0-100")
+    matching_skills: List[str] = Field(default_factory=list, description="Skills that match job requirements")
+    missing_skills: List[str] = Field(default_factory=list, description="Required skills missing from resume")
+    recommendation: str = Field(..., description="Overall recommendation")
+
+class JobMatchPlugin(ExtractorPlugin):
+    """Plugin to match resumes against job descriptions."""
+    
+    def __init__(self, job_description: str, llm_service=None):
+        """Initialize with a job description."""
+        self.job_description = job_description
+        self.llm_service = llm_service
+    
+    @property
+    def metadata(self) -> PluginMetadata:
+        return PluginMetadata(
+            name="job_matcher",
+            version="1.0.0",
+            description="Matches resumes against job descriptions",
+            category=PluginCategory.ANALYZER,
+            author="Your Name"
+        )
+    
+    def get_model(self) -> Type[BaseModel]:
+        """Get the Pydantic model for job matching."""
+        return JobMatch
+    
+    def get_prompt_template(self) -> str:
+        """Get the prompt template for job matching."""
+        return """
+        Evaluate how well the candidate's resume matches the job description below.
+        
+        JOB DESCRIPTION:
+        {job_description}
+        
+        RESUME:
+        {text}
+        
+        Provide a match percentage (0-100), list matching skills, list missing required skills,
+        and give an overall recommendation.
+        
+        {format_instructions}
+        """
+    
+    def get_input_variables(self) -> List[str]:
+        """Get the input variables for the prompt template."""
+        return ["text", "job_description"]
+    
+    def prepare_input_data(self, extracted_text: str) -> Dict[str, Any]:
+        """Prepare input data for the prompt template."""
+        return {
+            "text": extracted_text,
+            "job_description": self.job_description
+        }
+```
+
+### 2. Using the Job Matching Plugin
+
+```python
+from cvinsight import CVInsightClient
+from custom_plugins import JobMatchPlugin
+
+# Job description
+job_description = """
+We are looking for a Python Developer with the following skills:
+- 3+ years experience with Python
+- Experience with Django or FastAPI
+- Familiarity with SQL databases (PostgreSQL preferred)
+- Experience with cloud platforms (AWS, Azure, or GCP)
+- Good understanding of REST APIs
+- Knowledge of CI/CD pipelines
+"""
+
+# Initialize the client
+client = CVInsightClient()
+
+# Create and register the job matching plugin
+job_matcher = JobMatchPlugin(job_description)
+client._plugin_manager.register_plugin(job_matcher)
+
+# Process a resume with the job matcher
+results = client.extract_all("path/to/resume.pdf")
+
+# Access job matching results
+job_match = results.get("job_matcher", {})
+print(f"Match percentage: {job_match.get('match_percentage')}%")
+print("Matching skills:")
+for skill in job_match.get('matching_skills', []):
+    print(f"- {skill}")
+print("Missing skills:")
+for skill in job_match.get('missing_skills', []):
+    print(f"- {skill}")
+print(f"Recommendation: {job_match.get('recommendation')}")
+```
+
+### 3. Token Usage Analysis
+
+This example shows how to analyze and optimize token usage:
+
+```python
+import json
+import os
+from cvinsight import CVInsightClient
+
+# Initialize the client
+client = CVInsightClient()
+
+# Process a resume
+results = client.extract_all("path/to/resume.pdf", log_token_usage=True)
+
+# Find the most recent token usage log
+logs_dir = "./logs"
+token_logs = [f for f in os.listdir(logs_dir) if f.endswith("_token_usage_") and f.endswith(".json")]
+token_logs.sort(reverse=True)  # Sort by most recent
+
+if token_logs:
+    latest_log = os.path.join(logs_dir, token_logs[0])
+    with open(latest_log, 'r') as f:
+        token_data = json.load(f)
+        
+    # Analyze token usage
+    total_tokens = token_data.get("token_usage", {}).get("total_tokens", 0)
+    prompt_tokens = token_data.get("token_usage", {}).get("prompt_tokens", 0)
+    completion_tokens = token_data.get("token_usage", {}).get("completion_tokens", 0)
+    
+    print(f"Total tokens: {total_tokens}")
+    print(f"Prompt tokens: {prompt_tokens} ({prompt_tokens/total_tokens:.1%})")
+    print(f"Completion tokens: {completion_tokens} ({completion_tokens/total_tokens:.1%})")
+    
+    # Analyze by extractor
+    print("\nToken usage by extractor:")
+    by_extractor = token_data.get("token_usage", {}).get("by_extractor", {})
+    for extractor, usage in by_extractor.items():
+        print(f"  {extractor}: {usage.get('total_tokens', 0)} tokens")
 ```
 
 ## Best Practices
 
-### 1. Plugin Development
-
-- Keep plugins focused and single-purpose
-- Implement proper error handling
-- Validate LLM outputs
-- Optimize prompt templates
-- Write comprehensive tests
-
-### 2. Performance Optimization
-
-- Use async/await for I/O operations
-- Implement caching where appropriate
-- Monitor token usage
-- Handle large inputs efficiently
-- Use concurrent processing for multiple resumes
-
-### 3. Error Handling
-
-- Implement retry logic for API calls
-- Validate input data
-- Handle edge cases
-- Provide meaningful error messages
-- Log errors appropriately
-
-## Next Steps
-
-- Review the [Technical Documentation](Technical-Documentation) for detailed technical documentation
-- Check out the [Plugin System](Plugin-System) guide for more plugin examples
-- Join the community to share and learn from others 
+1. **Error Handling**: Always implement proper error handling when using the CVInsight API.
+2. **API Key Management**: Use environment variables for API keys rather than hardcoding them.
+3. **Token Optimization**: Use specific extractors when you only need certain information.
+4. **Resume Format**: Ensure resumes are in a standard format (PDF or DOCX) for best results.
+5. **Testing**: Test your custom plugins with a variety of resume formats and structures. 

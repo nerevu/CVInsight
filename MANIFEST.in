@@ -1,0 +1,15 @@
+include LICENSE
+include README.md
+include requirements.txt
+include .env.example
+
+recursive-include cvinsight/base_plugins *
+recursive-include cvinsight/custom_plugins *
+recursive-include cvinsight/models *
+recursive-include cvinsight/utils *
+recursive-include docs/wiki *.md
+
+global-exclude *.pyc
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude *.so 
