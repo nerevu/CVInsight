@@ -1,6 +1,8 @@
-# Resume Analysis
+# CVInsight
 
 A powerful tool for extracting and analyzing information from resumes using Large Language Models (LLMs) with a plugin-based architecture.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
 
