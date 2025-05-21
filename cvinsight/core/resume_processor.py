@@ -149,14 +149,46 @@ class PluginResumeProcessor:
             custom_plugins = [p for p in self.plugin_manager.plugins.values() 
                              if p.metadata.category == PluginCategory.CUSTOM]
             
+            logging.info(f"Processing {len(custom_plugins)} custom plugins.")
+            
             for plugin in custom_plugins:
                 try:
+                    logging.info(f"Processing custom plugin: {plugin.metadata.name}")
+                    
+                    # Check if plugin has a process_resume method (legacy approach)
                     if hasattr(plugin, 'process_resume'):
+                        logging.info(f"Using process_resume() method for {plugin.metadata.name}")
                         plugin_data = plugin.process_resume(resume, extracted_text)
                         if plugin_data:
                             resume.add_plugin_data(plugin.metadata.name, plugin_data)
+                            logging.info(f"Added data for {plugin.metadata.name} with process_resume method")
+                    # Otherwise use the extract method directly
+                    elif hasattr(plugin, 'extract'):
+                        logging.info(f"Using extract() method for {plugin.metadata.name}")
+                        plugin_data, token_usage = plugin.extract(extracted_text)
+                        if plugin_data:
+                            resume.add_plugin_data(plugin.metadata.name, plugin_data)
+                            logging.info(f"Added data for {plugin.metadata.name} with extract method: {plugin_data}")
+                            
+                            # Update token usage
+                            if token_usage:
+                                if "by_extractor" not in total_token_usage:
+                                    total_token_usage["by_extractor"] = {}
+                                    
+                                total_token_usage["by_extractor"][plugin.metadata.name] = {
+                                    "total_tokens": token_usage.get("total_tokens", 0),
+                                    "prompt_tokens": token_usage.get("prompt_tokens", 0),
+                                    "completion_tokens": token_usage.get("completion_tokens", 0),
+                                    "source": token_usage.get("source", "custom_plugin")
+                                }
+                                
+                                total_token_usage["total_tokens"] += token_usage.get("total_tokens", 0)
+                                total_token_usage["prompt_tokens"] += token_usage.get("prompt_tokens", 0)
+                                total_token_usage["completion_tokens"] += token_usage.get("completion_tokens", 0)
                 except Exception as e:
-                    logging.error(f"Error processing custom plugin {plugin.metadata.name}: {e}")
+                    logging.error(f"Error processing custom plugin {plugin.metadata.name}: {str(e)}")
+                    import traceback
+                    logging.error(traceback.format_exc())
             
             return resume
             

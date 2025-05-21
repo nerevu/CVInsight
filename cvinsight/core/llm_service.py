@@ -1,5 +1,6 @@
 """LLM service for CVInsight."""
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from functools import lru_cache
@@ -12,30 +13,63 @@ import os
 class LLMService:
     """Service for interacting with LLM API."""
     
-    def __init__(self, model_name=None, api_key=None):
+    def __init__(self, model_name=None, api_key=None, provider="google"):
         """
         Initialize the LLM service.
         
         Args:
-            model_name: The name of the model to use. Defaults to config.DEFAULT_LLM_MODEL.
-            api_key: The API key to use. If None, will use config.GOOGLE_API_KEY
+            model_name: The name of the model to use. Defaults based on provider.
+            api_key: The API key to use. If None, will look in environment variables.
+            provider: The LLM provider to use - "google" or "openai" (default: "google")
         """
-        self.model_name = model_name or config.DEFAULT_LLM_MODEL
-        self.api_key = api_key or config.GOOGLE_API_KEY or os.environ.get("GOOGLE_API_KEY")
+        self.provider = provider.lower()
         
-        if not self.api_key:
-            raise ValueError("Google API key is required. Either provide it directly to LLMService or set the GOOGLE_API_KEY environment variable.")
-            
+        # Set default model name based on provider if not specified
+        if not model_name:
+            if self.provider == "openai":
+                self.model_name = "gpt-3.5-turbo-16k"
+            else:  # Default to Google
+                self.model_name = config.DEFAULT_LLM_MODEL
+        else:
+            self.model_name = model_name
+        
+        # Get API key based on provider
+        if self.provider == "openai":
+            self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
+            if not self.api_key:
+                raise ValueError("OpenAI API key is required. Either provide it directly to LLMService or set the OPENAI_API_KEY environment variable.")
+        else:  # Default to Google
+            self.api_key = api_key or config.GOOGLE_API_KEY or os.environ.get("GOOGLE_API_KEY")
+            if not self.api_key:
+                raise ValueError("Google API key is required. Either provide it directly to LLMService or set the GOOGLE_API_KEY environment variable.")
+        
         self.llm = self._get_llm()
     
     def _get_llm(self):
         """
-        Get a LLM instance.
+        Get a LLM instance based on the provider.
         
         Returns:
-            A ChatGoogleGenerativeAI instance.
+            A ChatGoogleGenerativeAI or ChatOpenAI instance.
         """
-        return ChatGoogleGenerativeAI(api_key=self.api_key, model=self.model_name)
+        if self.provider == "openai":
+            # For o4-mini models, DO NOT include temperature parameter at all
+            if "o4-mini" in self.model_name:
+                logging.info(f"Using OpenAI {self.model_name} model without temperature parameter")
+                return ChatOpenAI(
+                    api_key=self.api_key, 
+                    model=self.model_name
+                )
+            else:
+                # For other models, use temperature parameter
+                logging.info(f"Using OpenAI {self.model_name} model with temperature=0.1")
+                return ChatOpenAI(
+                    api_key=self.api_key, 
+                    model=self.model_name,
+                    temperature=0.1  # Lower temperature for more deterministic results
+                )
+        else:  # Default to Google
+            return ChatGoogleGenerativeAI(api_key=self.api_key, model=self.model_name)
     
     def create_extraction_chain(self, pydantic_model: Type[BaseModel], prompt_template: str, input_variables: list):
         """
