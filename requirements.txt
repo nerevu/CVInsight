@@ -2,8 +2,12 @@ PyPDF2
 langchain
 langchain-community
 langchain-google-genai
+langchain-openai
+openai>=1.0.0
 python-dotenv
 docx2txt
+pandas
+tqdm
 
 # Testing dependencies
 pytest>=7.0.0
