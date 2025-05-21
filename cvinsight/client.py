@@ -16,24 +16,28 @@ from .models.resume_models import (
 class CVInsightClient:
     """Client for CVInsight resume analysis.
     
-    This client provides methods for analyzing resumes using Google's Gemini models.
+    This client provides methods for analyzing resumes using various LLM providers including OpenAI and Google Gemini.
     """
     
-    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = "google"):
         """
         Initialize the CVInsight client.
         
         Args:
-            api_key: Google API key for accessing Gemini models. If None, will look for
-                    GOOGLE_API_KEY environment variable
-            model_name: The name of the model to use. If None, will use default from config
+            api_key: API key for accessing LLM services. If None, will look for
+                    environment variables based on the provider.
+            model_name: The name of the model to use. If None, will use default from config.
+            provider: The LLM provider to use. Options: "google", "openai" (default: "google")
         """
-        # Store API key in environment if provided
+        # Store API key in environment if provided, based on provider
         if api_key:
-            os.environ["GOOGLE_API_KEY"] = api_key
+            if provider.lower() == "openai":
+                os.environ["OPENAI_API_KEY"] = api_key
+            else:  # Default to Google
+                os.environ["GOOGLE_API_KEY"] = api_key
             
         # Initialize services
-        self._llm_service = LLMService(model_name=model_name)
+        self._llm_service = LLMService(model_name=model_name, provider=provider)
         self._plugin_manager = PluginManager(self._llm_service)
         self._plugin_manager.load_all_plugins()
         self._processor = ResumeProcessor(plugin_manager=self._plugin_manager)
