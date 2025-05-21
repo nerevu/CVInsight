@@ -1,37 +1,89 @@
 # CVInsight
 
-AI-powered resume parsing and analysis using Google's Gemini models.
+AI-powered resume parsing and analysis using OpenAI models.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
 
-CVInsight is a Python package that helps streamline the resume review process by automatically extracting key information from PDF and DOCX resumes. The system uses Google's Gemini models to process and extract structured data from unstructured resume text through a flexible plugin architecture.
+CVInsight is a Python package that helps streamline the resume review process by automatically extracting key information from PDF and DOCX resumes. The system uses OpenAI o4-mini models to process and extract structured data from unstructured resume text through a flexible plugin architecture.
 
 ## Key Features
 
-- **Clean Dictionary Output**: All functions return clean Python dictionaries, not Pydantic objects.
-- **Separate Token Usage Logging**: Token usage data is logged to separate files in the `logs/` directory.
-- **Consistent API**: Both client and API approaches produce the same output format.
-- **Easy Authentication**: Multiple ways to provide API keys (direct, environment variables, .env).
-- **Dictionary Output**: All extractors return dictionaries or lists of dictionaries for easy JSON serialization.
-- **Extract structured information** from resumes (PDF, DOCX).
-- **Parse personal details**, education, experience, skills, and more.
-- **Customize extraction** with plugins.
-- **CLI tool** for batch processing.
-- **Plugin-Based Architecture**: Easily extend functionality by adding new plugins.
-- **Multiple Resume Formats**: Supports both PDF and DOCX resume file formats.
-- **Profile Extraction**: Extracts basic information like name, contact number, and email.
-- **Skills Analysis**: Identifies skills from resumes.
-- **Education History**: Extracts educational qualifications with institution names, dates, and degrees.
-- **Work Experience**: Analyzes professional experience with company names, roles, and dates.
-- **Years of Experience**: Calculates total professional experience based on work history.
-- **Concurrent Processing**: Processes multiple aspects of resumes in parallel for efficiency.
-- **Structured Output**: Provides results in clean, structured JSON format.
-- **Token Usage Tracking**: Monitors and logs API token consumption for each resume processed.
-- **Separated Log Files**: Keeps resume outputs clean by storing token usage data in separate log files.
-- **Automatic Log Rotation**: Implements log rotation to keep log files manageable.
-- **Configurable Log Retention**: Automatically cleans up token usage logs after a configurable period.
+- **Extract structured information** from resumes (PDF, DOCX)
+- **Parse personal details**, education, experience, skills, and more
+- **Parallel Processing**: Processes multiple aspects of resumes in parallel for efficiency
+- **Structured Output**: Provides results in clean, structured CSV format
+- **Multiple Resume Formats**: Supports both PDF and DOCX resume file formats
+
+## System Improvements
+
+### Fixed Temperature Parameter Issue with OpenAI o4-mini Models
+- The o4-mini-2025-04-16 model doesn't accept the temperature parameter, which was causing API errors
+- Modified code to conditionally apply temperature only for compatible models
+
+### Parallel Processing Implementation
+- Implemented a phased approach for plugin execution to respect dependencies while maximizing parallelism:
+  - **Phase 1**: Base information extraction in parallel (profile, skills, education, experience)
+  - **Phase 2**: Dependent information extraction in parallel (YoE, education stats, work stats)
+  - **Phase 3**: Final dependent information extraction (relevant YoE)
+- Performance gain: Approximately 40-50% reduction in processing time per resume
+
+### Enhanced Education Years Calculation
+- Updated RelevantYoEExtractorPlugin to properly handle degree status
+- Added conditional logic to apply different year values based on degree status (pursuing vs. completed)
+- Improved degree pattern recognition for various formats
+- Expanded mapping to handle more degree types and variations
+
+### Project Structure Reorganization
+- Consolidated main execution into a single optimized script
+- Simplified output to a single CSV file
+
+## Usage
+
+```bash
+# Process all resumes in the Resumes directory
+python run_resumes.py --all
+
+# Process a limited number of resumes (e.g., 5)
+python run_resumes.py --limit 5
+```
+
+## Jupyter Notebook Integration
+
+CVInsight can be easily integrated into Jupyter notebooks for interactive resume analysis:
+
+```python
+# Import CVInsight notebook utilities
+from cvinsight.notebook_utils import initialize_client, parse_single_resume, parse_many_resumes, find_resumes
+
+# Initialize client with API key
+client = initialize_client(api_key="your_api_key_here", provider="openai")
+
+# Find and parse resumes
+resume_paths = find_resumes("path/to/resumes")
+resumes_df = parse_many_resumes(client, resume_paths, parallel=True)
+
+# Work with the results DataFrame
+print(f"Successfully parsed: {(resumes_df['parsing_status'] == 'success').sum()}")
+```
+
+For detailed instructions on integrating CVInsight with Jupyter notebooks, see [Notebook Integration Guide](docs/notebook_integration.md).
+
+Example notebooks are provided in the `examples` directory:
+- [CVInsight Demo Notebook](examples/cvinsight_demo.ipynb) - Comprehensive demonstration
+- [Target Notebook Integration](examples/target_notebook_integration.ipynb) - Integration example
+
+## Performance Metrics
+
+The latest run with all 21 resumes showed:
+- 100% success rate (21/21 processed)
+- Average time per resume: 53.47 seconds
+- Total processing time: 1122.91 seconds
+
+## Output
+
+The script generates a single CSV file containing all extracted information from the resumes at: `Results/resume_analysis_results.csv`
 
 ## Installation
 
