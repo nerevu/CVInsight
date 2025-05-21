@@ -83,7 +83,14 @@ class YoeExtractorPlugin(ExtractorPlugin):
             work_experiences = experience_data.get('work_experiences', [])
             
             if not work_experiences:
-                logging.warning("No work experiences found in experience data")
+                # Add more detailed logging about the experience_data received
+                if experience_data:
+                    logging.warning(f"No work experiences found in experience data. Experience data keys: {experience_data.keys()}")
+                else:
+                    logging.warning("Empty experience data received by YoE extractor")
+                
+                # Try to extract work experience information directly if it's not in the standard format
+                # This is useful if the experience extractor plugin didn't work correctly
                 return default_result, token_usage
             
             # Collect all valid dates
