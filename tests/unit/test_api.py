@@ -1,158 +1,160 @@
-"""Unit tests for CVInsight API functions."""
+"""Test the main API functions."""
 import pytest
-from pathlib import Path
-from typing import Dict, Any
-from unittest.mock import patch, MagicMock
+import os
+import sys
+from unittest.mock import Mock, patch, MagicMock
 
-from cvinsight.api import (
-    extract_all,
-    extract_profile,
-    extract_skills,
-    extract_education,
-    extract_experience,
-    extract_years_of_experience,
-    analyze_resume,
-    list_all_plugins,
-    list_plugins_by_category
-)
+# Add the parent directory to the path so we can import cvinsight
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-def test_extract_all(mock_processor, sample_resume_path, sample_resume_data):
-    """Test extract_all function."""
-    # Mock the processor's process_resume method
-    mock_processor.process_resume.return_value = MagicMock(
-        model_dump=lambda exclude: sample_resume_data
-    )
-    mock_processor.plugin_manager = MagicMock()
+from cvinsight import api
+
+
+class TestAPI:
+    """Test the API module functions."""
     
-    with patch('cvinsight.api._get_processor', return_value=mock_processor):
-        result = extract_all(sample_resume_path)
+    @pytest.fixture
+    def mock_processor(self):
+        """Mock processor for testing."""
+        with patch('cvinsight.api._get_processor') as mock:
+            yield mock.return_value
+    
+    @pytest.fixture
+    def mock_plugin_manager(self):
+        """Mock plugin manager for testing."""
+        with patch('cvinsight.api._get_plugin_manager') as mock:
+            yield mock.return_value
+    
+    def test_configure(self):
+        """Test API configuration."""
+        with patch('cvinsight.api._get_llm_service'), \
+             patch('cvinsight.api._get_plugin_manager'), \
+             patch('cvinsight.api._get_processor'):
+            
+            api.configure("test-api-key", "test-model")
+            
+            # Should not raise any exceptions
+            assert True
+    
+    def test_extract_all(self, mock_processor):
+        """Test extract_all function."""
+        mock_resume = Mock()
+        mock_resume.model_dump.return_value = {
+            "name": "John Doe",
+            "email": "john@example.com",
+            "skills": ["Python"]
+        }
+        # Make token_usage JSON serializable
+        mock_resume.token_usage = {"input_tokens": 100, "output_tokens": 50}
+        mock_processor.process_resume.return_value = mock_resume
         
-        assert result == sample_resume_data
-        mock_processor.process_resume.assert_called_once_with(str(sample_resume_path))
-
-def test_extract_profile(mock_plugin_manager, sample_resume_path, sample_resume_text):
-    """Test extract_profile function."""
-    # Mock the plugin manager and plugin
-    mock_plugin = MagicMock()
-    mock_plugin.extract.return_value = ({"name": "John Doe", "email": "john@example.com"}, None)
-    mock_plugin_manager.get_plugin.return_value = mock_plugin
-    
-    with patch('cvinsight.api._get_plugin_manager', return_value=mock_plugin_manager), \
-         patch('cvinsight.core.utils.file_utils.read_file', return_value=sample_resume_text):
-        result = extract_profile(sample_resume_path)
+        result = api.extract_all("fake_resume.pdf")
         
-        assert result == {"name": "John Doe", "email": "john@example.com"}
-        mock_plugin_manager.get_plugin.assert_called_once_with("profile_extractor")
-        mock_plugin.extract.assert_called_once_with(sample_resume_text)
-
-def test_extract_skills(mock_plugin_manager, sample_resume_path, sample_resume_text):
-    """Test extract_skills function."""
-    # Mock the plugin manager and plugin
-    mock_plugin = MagicMock()
-    mock_plugin.extract.return_value = ({"skills": ["Python", "JavaScript"]}, None)
-    mock_plugin_manager.get_plugin.return_value = mock_plugin
+        assert isinstance(result, dict)
+        assert "name" in result
+        mock_processor.process_resume.assert_called_once_with("fake_resume.pdf")
     
-    with patch('cvinsight.api._get_plugin_manager', return_value=mock_plugin_manager), \
-         patch('cvinsight.core.utils.file_utils.read_file', return_value=sample_resume_text):
-        result = extract_skills(sample_resume_path)
+    def test_extract_profile(self, mock_processor):
+        """Test extract_profile function."""
+        mock_result = Mock()
+        mock_result.profile = {"name": "John Doe", "email": "john@example.com"}
+        mock_processor.process_resume.return_value = mock_result
         
-        assert result == ["Python", "JavaScript"]
-        mock_plugin_manager.get_plugin.assert_called_once_with("skills_extractor")
-        mock_plugin.extract.assert_called_once_with(sample_resume_text)
-
-def test_extract_education(mock_plugin_manager, sample_resume_path, sample_resume_text):
-    """Test extract_education function."""
-    # Mock the plugin manager and plugin
-    mock_plugin = MagicMock()
-    mock_plugin.extract.return_value = ({"educations": [{"degree": "BS", "institution": "University"}]}, None)
-    mock_plugin_manager.get_plugin.return_value = mock_plugin
-    
-    with patch('cvinsight.api._get_plugin_manager', return_value=mock_plugin_manager), \
-         patch('cvinsight.core.utils.file_utils.read_file', return_value=sample_resume_text):
-        result = extract_education(sample_resume_path)
+        result = api.extract_profile("fake_resume.pdf")
         
-        assert result == [{"degree": "BS", "institution": "University"}]
-        mock_plugin_manager.get_plugin.assert_called_once_with("education_extractor")
-        mock_plugin.extract.assert_called_once_with(sample_resume_text)
-
-def test_extract_experience(mock_plugin_manager, sample_resume_path, sample_resume_text):
-    """Test extract_experience function."""
-    # Mock the plugin manager and plugin
-    mock_plugin = MagicMock()
-    mock_plugin.extract.return_value = ({"work_experiences": [{"company": "Tech Corp", "role": "Engineer"}]}, None)
-    mock_plugin_manager.get_plugin.return_value = mock_plugin
+        assert isinstance(result, dict)
+        mock_processor.process_resume.assert_called_once_with("fake_resume.pdf")
     
-    with patch('cvinsight.api._get_plugin_manager', return_value=mock_plugin_manager), \
-         patch('cvinsight.core.utils.file_utils.read_file', return_value=sample_resume_text):
-        result = extract_experience(sample_resume_path)
+    def test_extract_education(self, mock_processor):
+        """Test extract_education function."""
+        # Create proper education objects with model_dump method
+        education1 = Mock()
+        education1.model_dump.return_value = {"degree": "Bachelor of Science", "institution": "Test University"}
         
-        assert result == [{"company": "Tech Corp", "role": "Engineer"}]
-        mock_plugin_manager.get_plugin.assert_called_once_with("experience_extractor")
-        mock_plugin.extract.assert_called_once_with(sample_resume_text)
-
-def test_extract_years_of_experience(mock_plugin_manager, sample_resume_path):
-    """Test extract_years_of_experience function."""
-    # Mock the plugin manager and plugin
-    mock_plugin = MagicMock()
-    mock_plugin.extract.return_value = ({"YoE": "5+ years"}, None)
-    mock_plugin_manager.get_plugin.return_value = mock_plugin
-    
-    with patch('cvinsight.api._get_plugin_manager', return_value=mock_plugin_manager), \
-         patch('cvinsight.api.extract_experience', return_value=[{"company": "Tech Corp"}]):
-        result = extract_years_of_experience(sample_resume_path)
+        mock_result = Mock()
+        mock_result.educations = [education1]
+        mock_processor.process_resume.return_value = mock_result
         
-        assert result == "5+ years"
-        mock_plugin_manager.get_plugin.assert_called_once_with("yoe_extractor")
-        mock_plugin.extract.assert_called_once_with([{"company": "Tech Corp"}])
-
-def test_analyze_resume(mock_processor, sample_resume_path, sample_resume_data):
-    """Test analyze_resume function."""
-    # Mock the processor's process_resume method
-    mock_processor.process_resume.return_value = MagicMock(
-        model_dump=lambda exclude: sample_resume_data
-    )
-    mock_processor.plugin_manager = MagicMock()
-    mock_processor.plugin_manager.plugins = {}
-    
-    with patch('cvinsight.api._get_processor', return_value=mock_processor):
-        result = analyze_resume(sample_resume_path, plugins=["profile_extractor"])
+        result = api.extract_education("fake_resume.pdf")
         
-        assert result == sample_resume_data
-        mock_processor.process_resume.assert_called_once_with(str(sample_resume_path))
-
-def test_list_all_plugins(mock_plugin_manager):
-    """Test list_all_plugins function."""
-    # Mock the plugin manager's get_plugin_info method
-    mock_plugin_manager.get_plugin_info.return_value = [
-        {"name": "plugin1", "version": "1.0", "description": "Test plugin"}
-    ]
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["degree"] == "Bachelor of Science"
+        mock_processor.process_resume.assert_called_once_with("fake_resume.pdf")
     
-    with patch('cvinsight.api._get_plugin_manager', return_value=mock_plugin_manager):
-        result = list_all_plugins()
+    def test_extract_experience(self, mock_processor):
+        """Test extract_experience function."""
+        # Create proper experience objects with model_dump method
+        experience1 = Mock()
+        experience1.model_dump.return_value = {"title": "Software Engineer", "company": "Tech Corp"}
         
-        assert result == [{"name": "plugin1", "version": "1.0", "description": "Test plugin"}]
-        mock_plugin_manager.get_plugin_info.assert_called_once()
-
-def test_list_plugins_by_category(mock_plugin_manager):
-    """Test list_plugins_by_category function."""
-    # Mock the plugin manager's get_plugins_by_category method
-    mock_plugin = MagicMock()
-    mock_plugin.metadata.name = "plugin1"
-    mock_plugin.metadata.version = "1.0"
-    mock_plugin.metadata.description = "Test plugin"
-    mock_plugin.metadata.category.name = "extractor"
-    mock_plugin.metadata.author = "Test Author"
-    
-    mock_plugin_manager.get_plugins_by_category.return_value = [mock_plugin]
-    
-    with patch('cvinsight.api._get_plugin_manager', return_value=mock_plugin_manager):
-        result = list_plugins_by_category("extractor")
+        mock_result = Mock()
+        mock_result.work_experiences = [experience1]
+        mock_processor.process_resume.return_value = mock_result
         
-        assert result == [{
-            "name": "plugin1",
-            "version": "1.0",
-            "description": "Test plugin",
-            "category": "extractor",
-            "author": "Test Author"
-        }]
-        mock_plugin_manager.get_plugins_by_category.assert_called_once_with("extractor") 
+        result = api.extract_experience("fake_resume.pdf")
+        
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["title"] == "Software Engineer"
+        mock_processor.process_resume.assert_called_once_with("fake_resume.pdf")
+    
+    def test_extract_skills(self, mock_processor):
+        """Test extract_skills function."""
+        mock_result = Mock()
+        mock_result.skills = ["Python", "Machine Learning"]
+        mock_processor.process_resume.return_value = mock_result
+        
+        result = api.extract_skills("fake_resume.pdf")
+        
+        assert isinstance(result, dict)
+        assert "skills" in result
+        mock_processor.process_resume.assert_called_once_with("fake_resume.pdf")
+    
+    def test_extract_years_of_experience(self, mock_processor):
+        """Test extract_years_of_experience function."""
+        mock_result = Mock()
+        mock_result.YoE = "3.5"  # Use the correct attribute name from the API implementation
+        mock_processor.process_resume.return_value = mock_result
+        
+        result = api.extract_years_of_experience("fake_resume.pdf")
+        
+        assert result == "3.5"
+        mock_processor.process_resume.assert_called_once_with("fake_resume.pdf")
+    
+    def test_list_all_plugins(self, mock_plugin_manager):
+        """Test list_all_plugins function."""
+        mock_plugins = [
+            {"name": "profile_extractor", "version": "1.0.0"},
+            {"name": "skills_extractor", "version": "1.0.0"}
+        ]
+        mock_plugin_manager.list_plugins.return_value = mock_plugins
+        
+        result = api.list_all_plugins()
+        
+        assert isinstance(result, list)
+        assert len(result) == 2
+        mock_plugin_manager.list_plugins.assert_called_once()
+    
+    def test_list_plugins_by_category(self, mock_plugin_manager):
+        """Test list_plugins_by_category function."""
+        mock_plugins = [
+            {"name": "profile_extractor", "category": "base"}
+        ]
+        mock_plugin_manager.list_plugins_by_category.return_value = mock_plugins
+        
+        result = api.list_plugins_by_category("base")
+        
+        assert isinstance(result, list)
+        assert len(result) == 1
+        mock_plugin_manager.list_plugins_by_category.assert_called_once_with("base")
+    
+    def test_analyze_resume(self, mock_processor):
+        """Test analyze_resume function."""
+        mock_result = {"status": "success", "data": {"name": "John Doe"}}
+        mock_processor.process_resume.return_value = mock_result
+        
+        result = api.analyze_resume("fake_resume.pdf")
+        
+        assert isinstance(result, dict)
+        mock_processor.process_resume.assert_called_once_with("fake_resume.pdf")

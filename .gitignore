@@ -34,12 +34,10 @@ ENV/
 *.swo
 
 # Project specific
-Resumes/
-Results/
 logs/
-cvinsight.log
 *.log
 .coverage
+.coverage.*
 htmlcov/
 .pytest_cache/
 

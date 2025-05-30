@@ -1,0 +1,43 @@
+Data Analyst Position - Advanced Analytics Professional
+
+We are looking for a skilled Data Analyst to join our analytics team and drive data-driven decision making across the organization. The successful candidate will have strong technical skills and the ability to translate complex data into actionable business insights.
+
+Key Responsibilities:
+- Analyze large datasets to identify trends, patterns, and business opportunities
+- Develop and maintain automated reports and dashboards using SQL, Python, and BI tools
+- Perform statistical analysis and predictive modeling to support business decisions
+- Clean, validate, and prepare data for analysis from multiple sources
+- Create compelling data visualizations and presentations for stakeholders
+- Collaborate with cross-functional teams to define metrics and KPIs
+- Conduct A/B testing and experimental design for product optimization
+- Support data governance initiatives and maintain data quality standards
+
+Required Qualifications:
+- Bachelor's degree in Statistics, Mathematics, Computer Science, Economics, or related field
+- 3+ years of experience in data analysis or business intelligence
+- Advanced proficiency in SQL for data extraction and manipulation
+- Strong programming skills in Python or R for statistical analysis
+- Experience with data visualization tools (Tableau, Power BI, or similar)
+- Knowledge of statistical methods and machine learning concepts
+- Excellent analytical and problem-solving abilities
+- Strong communication skills to present findings to non-technical audiences
+
+Preferred Qualifications:
+- Master's degree in Data Science, Statistics, or related quantitative field
+- Experience with cloud platforms (AWS, Azure, GCP) and big data technologies
+- Knowledge of machine learning frameworks (scikit-learn, pandas, numpy)
+- Experience with version control systems (Git) and collaborative development
+- Familiarity with database management and data warehousing concepts
+- Experience in agile development environments
+- Industry certifications in data analysis or business intelligence
+- Experience with advanced analytics techniques (time series, clustering, NLP)
+
+Technical Skills:
+- Programming: Python, R, SQL, Excel (advanced)
+- Databases: PostgreSQL, MySQL, MongoDB, Snowflake
+- Visualization: Tableau, Power BI, Matplotlib, Seaborn, Plotly
+- Tools: Jupyter, Git, Docker, Airflow
+- Cloud: AWS S3, Redshift, Azure, Google BigQuery
+- Statistics: Hypothesis testing, regression analysis, experimental design
+
+This role offers the opportunity to work with cutting-edge analytics technologies and make a significant impact on business strategy through data-driven insights.

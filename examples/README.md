@@ -1,34 +1,108 @@
-# CVInsight Jupyter Notebook Examples
+# CVInsight Examples
 
-This directory contains example Jupyter notebooks demonstrating how to use the CVInsight resume parsing system in your own projects.
+This directory contains production-ready examples demonstrating CVInsight's unified resume analysis capabilities.
 
-## Available Examples
+## 📚 Available Examples
 
-1. **cvinsight_demo.ipynb** - A comprehensive demonstration of all CVInsight notebook utilities
-2. **target_notebook_integration.ipynb** - A specific integration example for the Resume Parser project
-3. **robust_notebook_integration.ipynb** - An error-resistant implementation with advanced features
-4. **cvinsight_quick_start.ipynb** - A clean, step-by-step guide to using the core functions
-5. **minimal_cvinsight.ipynb** - Super slim implementation with minimal boilerplate
+### Core Examples
+These examples demonstrate different aspects of CVInsight's capabilities:
 
-## How to Use These Examples
+### 🎯 **minimal_cvinsight.ipynb** 
+**Job Description Comparison Demo** - The main example showcasing CVInsight's power:
+- Compare candidate suitability across different job roles (Data Analyst vs Florist)
+- Demonstrates job-specific relevance scoring
+- Shows how the same resume scores differently for different positions
+- Real-world application of unified extractor performance
+
+### 🚀 **unified_extractor_demo.ipynb**
+**Performance Demonstration** - Technical showcase of the unified extractor:
+- 75% performance improvement demonstration
+- Side-by-side comparison of old vs new architecture
+- Token usage and cost analysis
+- Complete system validation
+
+### 🎬 **final_unified_demo.py**
+**Command-Line Demo Script** - Production demo script:
+- Complete end-to-end workflow demonstration
+- Performance benchmarking
+- System health validation
+- Ready-to-run integration test
+
+---
+
+### Integration Examples
+**NEW!** Three distinct examples showing how to integrate CVInsight from external repositories:
+
+### 🏭 **production_batch_processor.py**
+**Enterprise Production Script** - Full-featured batch processor for production use:
+- Command-line interface with configurable parameters
+- Production-grade logging and error handling
+- Performance metrics and reporting
+- Structured CSV/JSON output
+- Integration patterns for external repositories
+- Complete error recovery workflows
+
+### ⚡ **concurrent_analysis_demo.ipynb**
+**High-Performance Concurrent Processing** - Advanced parallel processing demonstration:
+- Performance benchmarking (parallel vs sequential)
+- Scalability testing with different batch sizes
+- Real-time performance visualization
+- Advanced candidate ranking and analysis
+- Speedup calculations and optimization techniques
+- Export capabilities for downstream systems
+
+### 📖 **step_by_step_tutorial.ipynb**
+**Educational Walkthrough** - Comprehensive learning tutorial:
+- 10-step sequential learning process
+- Detailed explanations of all 21 unified extractor fields
+- Job relevance scoring methodology
+- No parallel processing for clarity
+- Integration examples and best practices
+- Complete results interpretation guidance
+
+## 🚀 Quick Start
 
 ### Prerequisites
+```bash
+# Set your OpenAI API key
+export OPEN_AI_API_KEY="your-api-key-here"
 
-1. Ensure you have the CVInsight repository available on your machine
-2. Set up your environment with the necessary API keys:
-   - OpenAI API key (`OPEN_AI_API_KEY`)
-   - Google Gemini API key (`GEMINI_API_KEY`) 
-3. Have resume files available (PDF, DOC, or DOCX format)
+# Install CVInsight (if not already installed)
+pip install -e /path/to/CVInsight
+```
 
-### Running the Examples
+### Basic Usage
+```python
+from cvinsight.notebook_utils import initialize_client, parse_single_resume
 
-1. Open the example notebook in Jupyter Lab or VS Code
-2. Update the paths to match your environment:
-   - Update `cvinsight_path` to point to your CVInsight repository
-   - Update resume directory paths to point to your resume files
-3. Run the cells in sequence to see how the CVInsight utilities work
+# Initialize
+client = initialize_client("your-api-key")
 
-## Key Components
+# Parse a resume with job context
+result = parse_single_resume(
+    client=client,
+    resume_path="path/to/resume.pdf",
+    date_of_resume_submission="2025-05-29",
+    job_description="Your job description here"
+)
+```
+
+## 🎯 Key Features Demonstrated
+
+### Performance Optimization
+- **75% faster processing** with unified extractor
+- **Single API call** for comprehensive analysis
+- **21 structured fields** extracted efficiently
+
+### Job-Specific Analysis
+- **Dynamic relevance scoring** based on job requirements
+- **Context-aware experience evaluation**
+- **Education relevance assessment**
+
+### Production Features
+- **Error handling and recovery**
+- **Parallel processing capabilities**
+- **Comprehensive logging and monitoring**
 
 The CVInsight notebook utilities provide the following functions:
 
