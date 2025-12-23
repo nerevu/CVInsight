@@ -76,7 +76,7 @@ jupyterlab_server==2.27.3
 jupyterlab_widgets==3.0.14
 kiwisolver==1.4.8
 langchain==0.3.25
-langchain-core==0.3.60
+langchain-core==0.3.81
 langchain-google-genai==2.1.4
 langchain-openai==0.3.17
 langchain-text-splitters==0.3.8
